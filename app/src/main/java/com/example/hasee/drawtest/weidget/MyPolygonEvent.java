@@ -78,8 +78,8 @@ public class MyPolygonEvent extends View {
         //画布移到中心点
         //        canvas.translate(mWidth / 2, mHeight / 2);
         //画n边形
-        exPath.reset();
-        path.reset();
+//        exPath.reset();
+//        path.reset();
         drawPolygon(pointList);
         canvas.drawPath(path, polyPaint);
         canvas.drawPath(exPath, extendPaint);
@@ -196,9 +196,6 @@ public class MyPolygonEvent extends View {
                 }
                 break;
 
-            case MotionEvent.ACTION_UP:
-                drawPolygon(pointList);
-                break;
 
             case MotionEvent.ACTION_MOVE:
               /*  *//**//*指导思想：从linePointList取出所有点遍历。最多三个点。要么两点x坐标相等，要么两点y坐标相等
@@ -228,60 +225,63 @@ public class MyPolygonEvent extends View {
                 /*判断curX的范围，要保证curX在两个y坐标点之间*/
                     if (Math.min(referPoint1Y, referPoint2Y) < curY && curY < Math.max(referPoint1Y, referPoint2Y)) {
 
-                        float dx1 = curX - downX;
-                        float temp = dx1;
-                        float dx2 = curX - dx1;
-                        newReferPoint1X = referPoint1X + dx1;
-                        newReferPoint2X = referPoint2X + dx1;
-                        if (index == -1) {
+//                        float dx1 = curX - downX;
+//                        float temp = dx1;
+//                        float dx2 = curX - dx1;
+//                        newReferPoint1X = referPoint1X + dx1;
+//                        newReferPoint2X = referPoint2X + dx1;
+//                        if (index == -1) {
+//
+//                            pointList.get(0).x = (int) (pointList.get(0).x + dx1);
+//                            pointList.get(pointList.size() - 1).x = (int) (pointList.get(pointList.size() - 1).x
+//                                    + dx1);
+//                            Log.e("DrawTestView_san", "水平移动增大index == -1" + dx1);
+////                            Log.e("DrawTestView_san", "水平移动增大index == -1\n" + "point:" + pointList.get(0).x +
+////                                    "/point1:" + pointList.get(pointList.size() - 1).x);
+//                        } else {
+//                            pointList.get(index).x = (int) (pointList.get(index).x + dx1);
+//                            pointList.get(index + 1).x = (int) (pointList.get(index + 1).x + dx1);
+//                            Log.e("DrawTestView_san", "水平移动增大index == -1" + dx1);
+////                            Log.e("DrawTestView_san", "水平移动增大else\n" + "point:" + pointList.get(index).x +
+////                                    "/point1:" + pointList.get(index + 1).x);
+//                        }
 
-                            pointList.get(0).x = (int) (pointList.get(0).x + dx1);
-                            pointList.get(pointList.size() - 1).x = (int) (pointList.get(pointList.size() - 1).x
-                                    + dx1);
-                            Log.e("DrawTestView_san", "水平移动增大index == -1" + dx1);
-//                            Log.e("DrawTestView_san", "水平移动增大index == -1\n" + "point:" + pointList.get(0).x +
-//                                    "/point1:" + pointList.get(pointList.size() - 1).x);
+
+                        if (curX > referPoint1X) {
+                            newReferPoint1X = referPoint1X + dx;
+                            newReferPoint2X = referPoint2X + dx;
+                            if (index == -1) {
+                                pointList.get(0).x = (int) (pointList.get(0).x + dx);
+                                pointList.get(pointList.size() - 1).x = (int) (pointList.get(pointList.size() - 1).x
+                                        + dx);
+                                Log.e("DrawTestView_san", "水平移动增大index == -1\n" + "point:" + pointList.get(0).x +
+                                        "/point1:" + pointList.get(pointList.size() - 1).x);
+                            } else {
+                                pointList.get(index).x = (int) (pointList.get(index).x + dx);
+                                pointList.get(index + 1).x = (int) (pointList.get(index + 1).x + dx);
+                                Log.e("DrawTestView_san", "水平移动增大else\n" + "point:" + pointList.get(index).x +
+                                        "/point1:" + pointList.get(index + 1).x);
+                            }
                         } else {
-                            pointList.get(index).x = (int) (pointList.get(index).x + dx1);
-                            pointList.get(index + 1).x = (int) (pointList.get(index + 1).x + dx1);
-                            Log.e("DrawTestView_san", "水平移动增大index == -1" + dx1);
-//                            Log.e("DrawTestView_san", "水平移动增大else\n" + "point:" + pointList.get(index).x +
-//                                    "/point1:" + pointList.get(index + 1).x);
+                            newReferPoint1X = referPoint1X - dx;
+                            newReferPoint2X = referPoint2X - dx;
+                            if (index == -1) {
+                                pointList.get(0).x = (int) (pointList.get(0).x - dx);
+                                pointList.get(pointList.size() - 1).x = (int) (pointList.get(pointList.size() - 1).x
+                                        - dx);
+                                Log.e("DrawTestView_san", "水平移动减小index == -1\n" + "point:" + pointList.get(0).x +
+                                        "/point1:" + pointList.get(pointList.size() - 1).x);
+
+                            } else {
+                                pointList.get(index).x = (int) (pointList.get(index).x - dx);
+                                pointList.get(index + 1).x = (int) (pointList.get(index + 1).x - dx);
+                                Log.e("DrawTestView_san", "水平移动减小else\n" + "point:" + pointList.get(index).x +
+                                        "/point1:" + pointList.get(index + 1).x);
+                            }
                         }
 
 
-//                        if (curX > referPoint1X) {
-//                            newReferPoint1X = referPoint1X + dx;
-//                            newReferPoint2X = referPoint2X + dx;
-//                            if (index == -1) {
-//                                pointList.get(0).x = (int) (pointList.get(0).x + dx);
-//                                pointList.get(pointList.size() - 1).x = (int) (pointList.get(pointList.size() - 1).x
-//                                        + dx);
-//                                Log.e("DrawTestView_san", "水平移动增大index == -1\n" + "point:" + pointList.get(0).x +
-//                                        "/point1:" + pointList.get(pointList.size() - 1).x);
-//                            } else {
-//                                pointList.get(index).x = (int) (pointList.get(index).x + dx);
-//                                pointList.get(index + 1).x = (int) (pointList.get(index + 1).x + dx);
-//                                Log.e("DrawTestView_san", "水平移动增大else\n" + "point:" + pointList.get(index).x +
-//                                        "/point1:" + pointList.get(index + 1).x);
-//                            }
-//                        } else {
-//                            newReferPoint1X = referPoint1X - dx;
-//                            newReferPoint2X = referPoint2X - dx;
-//                            if (index == -1) {
-//                                pointList.get(0).x = (int) (pointList.get(0).x - dx);
-//                                pointList.get(pointList.size() - 1).x = (int) (pointList.get(pointList.size() - 1).x
-//                                        - dx);
-//                                Log.e("DrawTestView_san", "水平移动减小index == -1\n" + "point:" + pointList.get(0).x +
-//                                        "/point1:" + pointList.get(pointList.size() - 1).x);
-//
-//                            } else {
-//                                pointList.get(index).x = (int) (pointList.get(index).x - dx);
-//                                pointList.get(index + 1).x = (int) (pointList.get(index + 1).x - dx);
-//                                Log.e("DrawTestView_san", "水平移动减小else\n" + "point:" + pointList.get(index).x +
-//                                        "/point1:" + pointList.get(index + 1).x);
-//                            }
-//                        }
+
                     }
                     exPath.moveTo(referPoint1X, referPoint1Y);
                     exPath.lineTo(newReferPoint1X, referPoint1Y);
@@ -322,6 +322,12 @@ public class MyPolygonEvent extends View {
                     exPath.moveTo(referPoint2X, referPoint2Y);
                     exPath.lineTo(referPoint2X, newReferPoint2Y);
                 }
+                break;
+
+            case MotionEvent.ACTION_UP:
+                exPath.reset();
+                path.reset();
+                drawPolygon(pointList);
                 break;
             default:
                 break;

@@ -14,11 +14,17 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import com.example.hasee.drawtest.model.Point;
+import com.example.hasee.drawtest.model.TwoPointDistance;
+import com.example.hasee.drawtest.utils.DensityUtil;
 import com.example.hasee.drawtest.utils.DrawUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
+import static android.R.attr.x;
+import static android.R.attr.y;
 import static com.example.hasee.drawtest.utils.DrawUtils.PtInRegion;
 
 /**
@@ -36,7 +42,7 @@ public class DrawTestView_san extends View {
     private Paint extendPaint;//延长线的画笔
     private Canvas cacheCanvas;  //画布
     private Bitmap cachebBitmap;
-    private Path path, exPath;
+    private Path path, exPath,testPath;
     private Context context;
     private Point downPoint;
     private List<Point> linePointList;//存储离触点最近的直线的两个端点
@@ -46,6 +52,7 @@ public class DrawTestView_san extends View {
     private List<Point> pointss = new ArrayList<>();
     private List<Point> points = new ArrayList<>();
     private List<Point> intentPoints = new ArrayList<>();
+    private List<TwoPointDistance> distanceList =new ArrayList<>();
     int inflexionX;//上一个拐点x
     int inflexionY;//上一个拐点y
     //当前点
@@ -60,19 +67,17 @@ public class DrawTestView_san extends View {
     private int firstX;
     private int firstY;
     List<Integer> flag;
+    float judgeDis = 20;  //按下的触摸点与此距离进行比较
+    float adsorbDis;  //吸附距离
 
-    float judgeDis = 20;
-
-    boolean drawAble = true;//判断是否可画图
     boolean isFirstX = true;  //记录移动x方向按下时候的点坐标
     boolean isFirstX1 = true;
     boolean isFirstY = true;
     boolean isFirstY1 = true;
-    private boolean isComplete = false;
+    private boolean isComplete = false; //专注画图部分功能
     boolean isRemoveStartPiont;
     float x1, x2 = 0;  //按下时候记录下来的点坐标，全局变量。赋值后就不是0
     float y1, y2 = 0;  //按下时候记录下来的点坐标，全局变量。赋值后就不是0
-
 
 
     public DrawTestView_san(Context context) {
@@ -93,25 +98,26 @@ public class DrawTestView_san extends View {
         init();
     }
 
-//    public void initData() {
-//        startPointList = new ArrayList<>();
-//        startPointList.add(new Point(50, 50));
-//        startPointList.add(new Point(100, 50));
-//        startPointList.add(new Point(100, 100));
-//        startPointList.add(new Point(200, 100));
-//        startPointList.add(new Point(200, 300));
-//        startPointList.add(new Point(50, 300));
+    public void initData() {
+        startPointList = new ArrayList<>();
+        startPointList.add(new Point(50, 50));
+        startPointList.add(new Point(100, 50));
+        startPointList.add(new Point(100, 100));
+        startPointList.add(new Point(200, 100));
+        startPointList.add(new Point(200, 300));
+        startPointList.add(new Point(50, 300));
 //        curPtList = new ArrayList<>();
 //        for (Point point : startPointList) {
 //            curPtList.add(new Point(point.getX(), point.getY()));
 //        }
-//    }
+    }
 
 
     public void init() {
-//        initData();
+        initData();
         path = new Path();
         exPath = new Path();
+        testPath = new Path();
 
         //多边形画笔
         paint = new Paint();
@@ -124,7 +130,7 @@ public class DrawTestView_san extends View {
         extendPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         extendPaint.setStyle(Paint.Style.STROKE);
         extendPaint.setColor(Color.GREEN);
-        extendPaint.setStrokeWidth(5);
+        extendPaint.setStrokeWidth(10);
         paint.setFilterBitmap(true);
 
         /*设置虚线*/
@@ -146,6 +152,9 @@ public class DrawTestView_san extends View {
         flag.add(7);
         flag.add(7);
         flag.add(7);
+
+        adsorbDis = DensityUtil.px2dip(context, 100);
+        Log.e("DrawTestView_san", "adsorbDis:" + adsorbDis);
     }
 
 
@@ -153,16 +162,14 @@ public class DrawTestView_san extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-//        path = new Path();
-//        exPath = new Path();
+        testPath.moveTo(startPointList.get(0).getX(), startPointList.get(0).getY());
+        for (int i = 1; i < startPointList.size(); i++) {
+            Point point = startPointList.get(i);
+            testPath.lineTo(point.getX(), point.getY());
+        }
+        testPath.close();
 
-//        path.moveTo(curPtList.get(0).getX(), curPtList.get(0).getY());
-//        for (int i = 1; i < curPtList.size(); i++) {
-//            Point point = curPtList.get(i);
-//            path.lineTo(point.getX(), point.getY());
-//        }
-//        path.close();
-
+        /** 画图 */
         if (curPtList != null && curPtList.size() > 0) {
             exPath.reset();
             path.reset();
@@ -173,12 +180,13 @@ public class DrawTestView_san extends View {
                 path.lineTo(point.getX(), point.getY());
             }
             path.lineTo(curPtList.get(0).getX(), curPtList.get(0).getY());
-
         }
 
         canvas.drawBitmap(cachebBitmap, 0, 0, null);
         canvas.drawPath(path, paint);
         canvas.drawPath(exPath, extendPaint);
+        canvas.drawPath(testPath, paint);
+
 
     }
 
@@ -202,10 +210,6 @@ public class DrawTestView_san extends View {
                 Log.e("DrawTestView", "DOWN" + cur_x + "/" + cur_y);
 
                 if (!isComplete) { //刚开始画
-                    if (!drawAble) {
-                        return false;
-                    }
-
                     int mx = (int) event.getX();
                     int my = (int) event.getY();
                     startX = mx;
@@ -240,28 +244,28 @@ public class DrawTestView_san extends View {
                             if (i == (curPtList.size() - 1)) {
                                 linePointList.add(curPtList.get(0));
                                 linePointList.add(curPtList.get(i));
-                                Log.e("DrawTestView_san", "linePointList中添加的坐标是：index= " + 1 + "------->" + "(" +
-                                        linePointList.get(1)
-                                                .getX() + "," + linePointList.get(1).getY() + ")" + "index=" + 0 +
-                                        "------->"
-                                        + "" +
-                                        "(" +
-                                        linePointList.get(0).getX() + "," + linePointList.get(0).getY() + ")");
+//                                Log.e("DrawTestView_san", "linePointList中添加的坐标是：index= " + 1 + "------->" + "(" +
+//                                        linePointList.get(1)
+//                                                .getX() + "," + linePointList.get(1).getY() + ")" + "index=" + 0 +
+//                                        "------->"
+//                                        + "" +
+//                                        "(" +
+//                                        linePointList.get(0).getX() + "," + linePointList.get(0).getY() + ")");
                                 drawExtendLine(curPtList.get(0), curPtList.get(curPtList.size() - 1));
                                 index = -1;//获取需要改变的点的下标
-                                Log.e("DrawTestView_san", "index_DOWN_first=  " + index);
+//                                Log.e("DrawTestView_san", "index_DOWN_first=  " + index);
                             } else {
                                 linePointList.add(curPtList.get(i));
                                 linePointList.add(curPtList.get(i + 1));
-                                Log.e("DrawTestView_san", "linePointList中添加的坐标是：index= " + 0 + "------->" + "(" +
-                                        linePointList.get(0)
-                                                .getX() + "," + linePointList.get(0).getY() + ")" + "index=" + 1 +
-                                        "------->"
-                                        + "" +
-                                        "(" +
-                                        linePointList.get(1).getX() + "," + linePointList.get(1).getY() + ")");
+//                                Log.e("DrawTestView_san", "linePointList中添加的坐标是：index= " + 0 + "------->" + "(" +
+//                                        linePointList.get(0)
+//                                                .getX() + "," + linePointList.get(0).getY() + ")" + "index=" + 1 +
+//                                        "------->"
+//                                        + "" +
+//                                        "(" +
+//                                        linePointList.get(1).getX() + "," + linePointList.get(1).getY() + ")");
                                 index = i;//获取需要改变的点的下标
-                                Log.e("DrawTestView_san", "index_DOWN_second=  " + index);
+//                                Log.e("DrawTestView_san", "index_DOWN_second=  " + index);
                                 /*再次做判断0和1*/
                                 drawExtendLine(curPtList.get(i), curPtList.get(i + 1));
                             }
@@ -336,7 +340,7 @@ public class DrawTestView_san extends View {
                     startX = lastX;
                     startY = lastY;
                 } else {
-                    //是否在图形内，且距离每条边的距离是否都大于10，是就拖拽滑动
+                    //是否在图形内，且距离每条边的距离是否都大于20，是就拖拽滑动
                     int count = 0;
                     for (Float aFloat : culDisList) {
                         if (aFloat > judgeDis) {
@@ -350,8 +354,8 @@ public class DrawTestView_san extends View {
                         for (int i = 0; i < curPtList.size(); i++) {
                             curPtList.get(i).setX(pointss.get(i).getX() + dx);
                             curPtList.get(i).setY(pointss.get(i).getY() + dy);
-                            Log.e("DrawTestView_san", "拖拽时坐标点：" + pointss.size() + "/" + pointss.get(i).getX() + "/" +
-                                    pointss.get(i).getY());
+//                            Log.e("DrawTestView_san", "拖拽时坐标点：" + pointss.size() + "/" + pointss.get(i).getX() + "/" +
+//                                    pointss.get(i).getY());
                         }
 
                     } else {  //拖拽移动某一条直线
@@ -395,8 +399,8 @@ public class DrawTestView_san extends View {
                                     pointss.get(0).setX(point.getX());
                                     pointss.get(curPtList.size() - 1).setX(point1.getX());
 
-                                    Log.e("DrawTestView_san", "水平移动增大index == -1：" + index + " x：" + x
-                                            + " referPoint1X: " + referPoint1X);
+//                                    Log.e("DrawTestView_san", "水平移动增大index == -1：" + index + " x：" + x
+//                                            + " referPoint1X: " + referPoint1X);
                                 } else {
                                     Point point = curPtList.get(index);
                                     Point point1 = curPtList.get(index + 1);
@@ -413,14 +417,14 @@ public class DrawTestView_san extends View {
                                     point1.setX(point1.getX() + dx1);
                                     pointss.get(index).setX(point.getX());
                                     pointss.get(index + 1).setX(point1.getX());
-                                    Log.e("DrawTestView_san", "水平移动增大else" + "/referPoint1X：" + referPoint1X
-                                            + "/dx1：" + dx1 + "/x1：" + x1);
+//                                    Log.e("DrawTestView_san", "水平移动增大else" + "/referPoint1X：" + referPoint1X
+//                                            + "/dx1：" + dx1 + "/x1：" + x1);
                                 }
                             }
-                            exPath.moveTo(referPoint1X, referPoint1Y);
-                            exPath.lineTo(newReferPoint1X, referPoint1Y);
-                            exPath.moveTo(referPoint2X, referPoint2Y);
-                            exPath.lineTo(newReferPoint2X, referPoint2Y);
+//                            exPath.moveTo(referPoint1X, referPoint1Y);
+//                            exPath.lineTo(newReferPoint1X, referPoint1Y);
+//                            exPath.moveTo(referPoint2X, referPoint2Y);
+//                            exPath.lineTo(newReferPoint2X, referPoint2Y);
                         }
                         // 垂直移动 x坐标不动 y坐标变化curY, 判断扩大还是缩小
                         if (dx < dy) {
@@ -445,8 +449,8 @@ public class DrawTestView_san extends View {
                                     point1.setY(point1.getY() + dy1);
                                     pointss.get(0).setY(point.getY());
                                     pointss.get(curPtList.size() - 1).setY(point1.getY());
-                                    Log.e("DrawTestView_san", "垂直移动增大index == -1\n" + "point:" + point.getY() +
-                                            "/point1:" + point1.getY());
+//                                    Log.e("DrawTestView_san", "垂直移动增大index == -1\n" + "point:" + point.getY() +
+//                                            "/point1:" + point1.getY());
                                 } else {
                                     Point point = curPtList.get(index);
                                     Point point1 = curPtList.get(index + 1);
@@ -463,8 +467,8 @@ public class DrawTestView_san extends View {
                                     point1.setY(point1.getY() + dy1);
                                     pointss.get(index).setY(point.getY());
                                     pointss.get(index + 1).setY(point1.getY());
-                                    Log.e("DrawTestView_san", "垂直移动增大else\n" + "point:" + point.getY() +
-                                            "/point1:" + point1.getY());
+//                                    Log.e("DrawTestView_san", "垂直移动增大else\n" + "point:" + point.getY() +
+//                                            "/point1:" + point1.getY());
                                 }
                             }
                             exPath.moveTo(referPoint1X, referPoint1Y);
@@ -482,10 +486,11 @@ public class DrawTestView_san extends View {
                 if (!isComplete) {
                     if (points.size() >= 2) {
                         closePolygon();
-                        anewDraw(points);
                         intentPoints.clear();
                         intentPoints.addAll(points);
-                        drawAble = false;
+                        isComplete = true; // TODO: 2017/7/23
+                        anewDraw(points);
+                        points.clear();
 
                         pointss = getPoints();
                         for (Point point : pointss) {
@@ -493,7 +498,6 @@ public class DrawTestView_san extends View {
                             Log.e("DrawTestView_san", "原始坐标点pointss:" + pointss.size() + " /" + point.getX() + "/" +
                                     point.getY());
                         }
-                        points.clear();
                     }
                 } else {
                     int count = 0;
@@ -505,22 +509,35 @@ public class DrawTestView_san extends View {
                     //当移动某一条直线时，如果不进行触摸点到直线距离的判断会改变pointss的原始坐标
                     // 导致拖拽整体时出现偏移的情况
                     if (isMoving && count == culDisList.size()) {
-                        float dx = x - cur_x;
-                        float dy = y - cur_y;
-                        Log.e("DrawTestView_san", "移动偏移量UP" + dx + "/" + dy);
+                        Log.e("DrawTestView_san", "整体移动是否执行此方法");
+                        moveSetData();
 
-                        List<Point> newPointList = new ArrayList<>();
-                        for (Point point : pointss) {
-                            float newX = point.getX() + dx;
-                            float newY = point.getY() + dy;
-                            Point newPoint = new Point(newX, newY);
-                            newPointList.add(newPoint);
-
-                            Log.e("DrawTestView_san", "拖拽后坐标点pointss:" + pointss.size() + " /" + newPoint.getX() + "/" +
-                                    newPoint.getY());
+                        distanceList.clear();
+                        for (int i = 0; i < pointss.size(); i++) {
+                            Point pointI = pointss.get(i);
+                            for (int j = 0; j < startPointList.size(); j++) {
+                                Point pointJ = startPointList.get(j);
+                                float distance = DrawUtils.calTwoPointDistance(pointI, pointJ);
+                                if (distance < adsorbDis) {
+                                    TwoPointDistance twoPointDistance = new TwoPointDistance(pointI, pointJ, distance);
+                                    distanceList.add(twoPointDistance);
+                                }
+                            }
                         }
-                        pointss.clear();
-                        pointss.addAll(newPointList);
+                        if (distanceList != null && distanceList.size() > 0) {
+                            Collections.sort(distanceList, new Comparator<TwoPointDistance>() {
+                                @Override
+                                public int compare(TwoPointDistance o1, TwoPointDistance o2) {
+                                    return (int)(o1.getDistance()-o2.getDistance());
+                                }
+                            });
+                            for (TwoPointDistance twoPointDistance : distanceList) {
+                                Log.e("DrawTestView_san", "twoPointDistance:" + twoPointDistance.toString());
+                            }
+                            xifuSetData(distanceList);
+                        }else{  //没有靠近就不吸附
+                            moveSetData();
+                        }
                     } else {
                         isFirstX = true;
                         isFirstX1 = true;
@@ -536,6 +553,47 @@ public class DrawTestView_san extends View {
         invalidate();
         return true;
     }
+
+    /**
+     * 移动后重置数据
+     */
+    public void moveSetData() {
+        float dx1 = x - cur_x;
+        float dy1 = y - cur_y;
+//     Log.e("DrawTestView_san", "移动偏移量UP" + dx + "/" + dy);
+        List<Point> newPointList1 = new ArrayList<>();
+        for (Point point : pointss) {
+            float newX = point.getX() + dx1;
+            float newY = point.getY() + dy1;
+            Point newPoint = new Point(newX, newY);
+            newPointList1.add(newPoint);
+//   Log.e("DrawTestView_san", "拖拽后坐标点pointss:" + pointss.size() + " /" + newPoint.getX() + "/" +
+//     newPoint.getY());
+        }
+        pointss.clear();
+        pointss.addAll(newPointList1);
+    }
+
+    /**
+     * 吸附后重置数据
+     */
+    public void xifuSetData(List<TwoPointDistance> distanceList) {
+        Point first = distanceList.get(0).first;
+        Point second = distanceList.get(0).second;
+        float dx_xifu = second.getX() - first.getX();
+        float dy_xifu = second.getY() - first.getY();
+
+        List<Point> newPointList = new ArrayList<>();
+        for (Point point : pointss) {
+            float newX = point.getX() + dx_xifu;
+            float newY = point.getY() + dy_xifu;
+            Point newPoint = new Point(newX, newY);
+            newPointList.add(newPoint);
+        }
+        pointss.clear();
+        pointss.addAll(newPointList);
+    }
+
 
     /**
      * 海伦公式求点到直线的距离  原理：求出三点围成的三角形的面积除以底边（直线的长度）
@@ -628,7 +686,11 @@ public class DrawTestView_san extends View {
                 List<Point> s2 = new ArrayList<>();
                 s2.add(p2);
                 s2.add(secendPoint);
-                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s2) == 0) {
+                List<Point> q2 = new ArrayList<>();
+                q2.add(p2);
+                q2.add(new Point(firstX, firstY));
+                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s2) == 0
+                        || DrawUtils.PtInRegion(secendPoint, q2) == 0) {
                     isRemoveStartPiont = true;
                 }
             } else {
@@ -643,7 +705,11 @@ public class DrawTestView_san extends View {
                 List<Point> s1 = new ArrayList<>();
                 s1.add(p1);
                 s1.add(secendPoint);
-                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s1) == 0) {
+                List<Point> q1 = new ArrayList<>();
+                q1.add(p2);
+                q1.add(new Point(firstX, firstY));
+                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s1) == 0
+                        || DrawUtils.PtInRegion(secendPoint, q1) == 0) {
                     isRemoveStartPiont = true;
                 }
             }
@@ -667,7 +733,11 @@ public class DrawTestView_san extends View {
                 List<Point> s2 = new ArrayList<>();
                 s2.add(p2);
                 s2.add(secendPoint);
-                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s2) == 0) {
+                List<Point> q2 = new ArrayList<>();
+                q2.add(p2);
+                q2.add(new Point(firstX, firstY));
+                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s2) == 0
+                        || DrawUtils.PtInRegion(secendPoint, q2) == 0) {
                     isRemoveStartPiont = true;
                 }
             } else {
@@ -682,7 +752,11 @@ public class DrawTestView_san extends View {
                 List<Point> s1 = new ArrayList<>();
                 s1.add(p1);
                 s1.add(secendPoint);
-                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s1) == 0) {
+                List<Point> q1 = new ArrayList<>();
+                q1.add(p2);
+                q1.add(new Point(firstX, firstY));
+                if (DrawUtils.PtInRegion(new Point(firstX, firstY), s1) == 0
+                        || DrawUtils.PtInRegion(secendPoint, q1) == 0) {
                     isRemoveStartPiont = true;
                 }
             }
@@ -700,7 +774,7 @@ public class DrawTestView_san extends View {
         pointss.clear();
         curPtList.clear();
         orientation = 7;
-        drawAble = true;
+        isComplete = false;
         isRemoveStartPiont = false;
         flag.clear();
         flag.add(7);

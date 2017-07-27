@@ -21,7 +21,6 @@ import java.util.List;
 
 public class DrawUtils {
 
-
     /**
      * 判断点击的点是否在图形内
      */
@@ -38,7 +37,8 @@ public class DrawUtils {
         return re.contains((int) event.getX(), (int) event.getY());
     }
 
-    /**标点是否落在指定的多边形区域内
+    /**
+     * 标点是否落在指定的多边形区域内
      * 判断坐
      */
     public static int PtInRegion(Point p0, List<Point> plg) {
@@ -101,9 +101,6 @@ public class DrawUtils {
     public static double xmult(Point p1, Point p2, Point p0) {
         return (p1.getX() - p0.getX()) * (p2.getY() - p0.getY()) - (p2.getX() - p0.getX()) * (p1.getY() - p0.getY());
     }
-
-
-
 
 
     /**
@@ -178,6 +175,98 @@ public class DrawUtils {
         coordinate[0] = lt;
         coordinate[1] = rb;
         return coordinate;
+    }
+
+    // 点到直线的距离 ： 点（x0,y0） 到由两点组成的线段（x1,y1） ,( x2,y2 )
+    public static double pointToLine(float x0, float y0, Point point1, Point point2) {
+        float x1 = point1.getX();
+        float y1 = point1.getY();
+        float x2 = point2.getX();
+        float y2 = point2.getY();
+        double space = 0;
+        double a, b, c;
+        a = lineSpace(x1, y1, x2, y2);// 线段的长度
+        b = lineSpace(x1, y1, x0, y0);// (x1,y1)到点的距离
+        c = lineSpace(x2, y2, x0, y0);// (x2,y2)到点的距离
+        if (c <= 0.000001 || b <= 0.000001) {
+            space = 0;
+            return space;
+        }
+        if (a <= 0.000001) {
+            space = b;
+            return space;
+        }
+        if (c * c >= a * a + b * b) {
+            space = b;
+            return space;
+        }
+        if (b * b >= a * a + c * c) {
+            space = c;
+            return space;
+        }
+        double p = (a + b + c) / 2;// 半周长
+        double s = Math.sqrt(p * (p - a) * (p - b) * (p - c));// 海伦公式求面积
+        space = 2 * s / a;// 返回点到线的距离（利用三角形面积公式求高）
+        return space;
+    }
+
+    // 计算两点之间的距离
+    public static double lineSpace(float x1, float y1, float x2, float y2) {
+        double lineLength = 0;
+        lineLength = Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2)
+                * (y1 - y2));
+        return lineLength;
+    }
+
+    /**
+     * 计算两点间距离
+     */
+    public static float calTwoPointDistance(Point first, Point second) {
+        float firstX = first.getX();
+        float firstY = first.getY();
+
+        float secondX = second.getX();
+        float secondY = second.getY();
+        float lineDis = (float) Math.sqrt(Math.pow(secondX - firstX, 2) + Math.pow(secondY - firstY, 2));
+        return lineDis;
+    }
+
+
+    /**
+     * 计算直线斜率
+     */
+    public static float calSlope(Point point, Point point1) {
+        float k = (point1.getY() - point.getY()) / (point1.getX() - point.getX());
+        return k;
+    }
+
+    /**
+     * 根据 不同直线上的两个点 求两条直线的相交点x坐标
+     * @param moveLineK 移动线斜率
+     * @param crossLineK 相交线斜率
+     * @param movePoint 移动线抬起时鼠标点坐标
+     * @param inwardPoint 相交线的两个坐标中任意一个
+     * @return
+     */
+    public static float calCrosspointX(float moveLineK, float crossLineK, Point movePoint, Point inwardPoint) {
+        float x, temp;
+        float movePointX = movePoint.getX();
+        float movePointY = movePoint.getY();
+        float inwardPointX = inwardPoint.getX();
+        float inwardPointY = inwardPoint.getY();
+
+        temp = moveLineK * movePointX - crossLineK * inwardPointX + inwardPointY - movePointY;
+        x = temp / (moveLineK - crossLineK);
+        return x;
+    }
+
+    /**
+     * 根据相交点x坐标求已经方程经过该点的y坐标
+     */
+    public static float calBeelineEquation(float k, float x, Point point) {
+        float y;
+        y = k * (x - point.getX()) + point.getY();
+        return y;
     }
 
 

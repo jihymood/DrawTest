@@ -14,21 +14,21 @@
         android:layout_weight="2"
         android:orientation="horizontal">
 
-        <com.example.hasee.drawtest.weidget.DrawTestView_san
+        <com.example.hasee.drawtest.weidget.One.DrawTestView_san
             android:id="@+id/drawTestView"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"/>
 
-        <com.example.hasee.drawtest.weidget.DrawPolygonView1
+        <com.example.hasee.drawtest.weidget.One.DrawPolygonView1
             android:id="@+id/drawPloygonView1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
             android:layout_marginLeft="5dp"
+            android:layout_weight="1"
             >
 
-        </com.example.hasee.drawtest.weidget.DrawPolygonView1>
+        </com.example.hasee.drawtest.weidget.One.DrawPolygonView1>
 
 
     </LinearLayout>
@@ -40,14 +40,14 @@
         android:layout_weight="1"
         android:orientation="horizontal">
 
-        <com.example.hasee.drawtest.weidget.DrawPolygonView
+        <com.example.hasee.drawtest.weidget.One.DrawPolygonView
             android:id="@+id/drawPloygonView"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@color/colorAccent"/>
 
-        <com.example.hasee.drawtest.weidget.MyPolygonEvent
+        <com.example.hasee.drawtest.weidget.One.MyPolygonEvent
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -55,7 +55,7 @@
 
     </LinearLayout>
 
-    <com.example.hasee.drawtest.weidget.DrawTestView_wh
+    <com.example.hasee.drawtest.weidget.One.DrawTestView_wh
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"/>
@@ -65,11 +65,32 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="清空"/>
-    <Button
-        android:id="@+id/tiaozhuan"
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="跳转"/>
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/tiaozhuan1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="FirstActivitt"/>
+
+        <Button
+            android:id="@+id/tiaozhuan2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SecondActivitt"/>
+        <Button
+            android:id="@+id/tiaozhuan3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="ThreeActivitt"/>
+    </LinearLayout>
 
 
 </LinearLayout>

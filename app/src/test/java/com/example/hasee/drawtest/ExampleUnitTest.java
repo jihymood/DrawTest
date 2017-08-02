@@ -5,7 +5,6 @@ import com.example.hasee.drawtest.model.Point;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -17,33 +16,60 @@ import java.util.List;
 public class ExampleUnitTest {
     @Test
     public void addition_isCorrect() throws Exception {
-        Point point = new Point(11, 12);
-        Point point1 = new Point(11, 12);
-        TwoPointDistance u1 = new TwoPointDistance(point,point1,63);
-        TwoPointDistance u2 = new TwoPointDistance(point,point1,23);
-        TwoPointDistance u3 = new TwoPointDistance(point,point1,73);
-        TwoPointDistance u4 = new TwoPointDistance(point,point1,32);
-        TwoPointDistance u5 = new TwoPointDistance(point,point1,30);
+//        Point point = new Point(11, 12);
+//        Point point1 = new Point(11, 12);
+//        TwoPointDistance u1 = new TwoPointDistance(point,point1,63);
+//        TwoPointDistance u2 = new TwoPointDistance(point,point1,23);
+//        TwoPointDistance u3 = new TwoPointDistance(point,point1,73);
+//        TwoPointDistance u4 = new TwoPointDistance(point,point1,32);
+//        TwoPointDistance u5 = new TwoPointDistance(point,point1,30);
+//
+//        List list = new ArrayList();
+//        list.add(u1);
+//        list.add(u2);
+//        list.add(u3);
+//        list.add(u4);
+//        list.add(u5);
+//        Object[] users = list.toArray();
+//        System.out.println("排序前。。。。");
+//        for (int i = 0; i < users.length; i++) {
+//            System.out.println(users[i]);
+//        }
+//        System.out.println("*******************************");
+//        System.out.println("排序后。。。。。");
+//        //把排序规则交给sort方法。该方法就回按照你自定义的规则进行排序
+//
+//        Arrays.sort(users, new MyComparator());
+//
+//        for (int i = 0; i < users.length; i++) {
+//            System.out.println(users[i]);
+//        }
 
-        List list = new ArrayList();
-        list.add(u1);
-        list.add(u2);
-        list.add(u3);
-        list.add(u4);
-        list.add(u5);
-        Object[] users = list.toArray();
-        System.out.println("排序前。。。。");
-        for (int i = 0; i < users.length; i++) {
-            System.out.println(users[i]);
+        removeYuansu();
+
+
+    }
+
+    public void setYuansu() {
+        List<String> list=new ArrayList<String>();
+        list.add("保护环境");  //向列表中添加数据
+        list.add("爱护地球");  //向列表中添加数据
+        list.add("从我做起");  //向列表中添加数据
+        String ret=list.set(1,"少用塑料袋");
+        System.out.println("获取索引位置1替换前的内容："+ret);
+        //通过循环输出列表中的内容
+        for(int i=0;i<list.size();i++){
+            System.out.println(i+":"+list.get(i));
         }
-        System.out.println("*******************************");
-        System.out.println("排序后。。。。。");
-        //把排序规则交给sort方法。该方法就回按照你自定义的规则进行排序
-
-        Arrays.sort(users, new MyComparator());
-
-        for (int i = 0; i < users.length; i++) {
-            System.out.println(users[i]);
+    }
+    public void removeYuansu() {
+        List<String> list=new ArrayList<String>();
+        list.add("保护环境");  //向列表中添加数据
+        list.add("爱护地球");  //向列表中添加数据
+        list.add("从我做起");  //向列表中添加数据
+        list.remove(1);
+        for(int i=0;i<list.size();i++){
+            System.out.println(i+":"+list.get(i));
         }
 
 

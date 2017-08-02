@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest.weidget;
+package com.example.hasee.drawtest.weidget.One;
 
 import android.content.Context;
 import android.graphics.Canvas;

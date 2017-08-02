@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest.weidget;
+package com.example.hasee.drawtest.weidget.One;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -136,7 +136,7 @@ public class DrawPolygonView1 extends View {
         canvas.drawPath(mPath, mPaint);
         if (first != null && second != null) {
             mPaint.setColor(Color.RED);
-            canvas.drawCircle(first.getX(), first.getY(), paintWidth / 2, mPaint);
+//            canvas.drawCircle(first.getX(), first.getY(), paintWidth / 2, mPaint);
             canvas.drawCircle(second.getX(), second.getY(), paintWidth / 2, mPaint);
         }
 
@@ -605,11 +605,6 @@ public class DrawPolygonView1 extends View {
 
     /**
      * 移动线
-     *
-     * @param startX
-     * @param startY
-     * @param dx
-     * @param dy
      */
     List<Point> movePoints = new ArrayList<>();//用于存放变化的点
 

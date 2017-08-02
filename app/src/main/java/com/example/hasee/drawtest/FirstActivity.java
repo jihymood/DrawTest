@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import com.example.hasee.drawtest.model.Point;
 import com.example.hasee.drawtest.utils.DrawUtils;
-import com.example.hasee.drawtest.weidget.DrawPolygonView2;
+import com.example.hasee.drawtest.weidget.One.DrawPolygonView2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +32,9 @@ public class FirstActivity extends AppCompatActivity implements View.OnClickList
         clear.setOnClickListener(this);
 
         setOrderPointList();
-        Point movePoint = new Point(0, 1);  //移动线抬起时的鼠标的点坐标
+//        Point movePoint = new Point(0, 1);  //移动线抬起时的鼠标的点坐标
 //        Point movePoint = new Point(6, 7);  //移动线抬起时的鼠标的点坐标
+        Point movePoint = new Point(4, 2);  //移动线抬起时的鼠标的点坐标
         getPoint(list, movePoint);
 
 
@@ -58,10 +59,15 @@ public class FirstActivity extends AppCompatActivity implements View.OnClickList
 //        list.add(point2);
 //        list.add(point3);
 
-        Point point = new Point(0, 0);  //移动线的坐标 ：集合中第0个
-        Point point1 = new Point(2, 2);  //移动线的坐标
-        Point point2 = new Point(1, 0);  //第一条相交线另一个坐标
-        Point point3 = new Point(1, 0);  //第二条相交线另一个坐标
+//        Point point = new Point(0, 0);  //移动线的坐标 ：集合中第0个
+//        Point point1 = new Point(2, 2);  //移动线的坐标
+//        Point point2 = new Point(1, 0);  //第一条相交线另一个坐标
+//        Point point3 = new Point(1, 0);  //第二条相交线另一个坐标
+
+        Point point = new Point(3, 2);  //移动线的坐标 ：集合中第0个
+        Point point1 = new Point(5, 5);  //移动线的坐标
+        Point point2 = new Point(1, 6);  //第一条相交线另一个坐标
+        Point point3 = new Point(1, 6);  //第二条相交线另一个坐标
         list.add(point);
         list.add(point1);
         list.add(point2);
@@ -83,7 +89,7 @@ public class FirstActivity extends AppCompatActivity implements View.OnClickList
 
 
         Log.e("FirstActivity", "moveLineK:" + moveLineK + "/" + "crossLineK:" + crossLineK + "/" +
-                "crosspointX:" + crosspointX + "/" + "crosspointY:" + crosspointY);
+                "crosspointX:" + crosspointX + "/ " + "crosspointY:" + crosspointY);
         Log.e("FirstActivity", "moveLineK:" + moveLineK + "/" + "crossLineK1:" + crossLineK1 + "/" +
                 "crosspointX1:" + crosspointX1 + "/" + "crosspointY1:" + crosspointY1);
 

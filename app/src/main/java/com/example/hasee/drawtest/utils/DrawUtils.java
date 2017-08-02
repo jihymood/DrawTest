@@ -236,15 +236,27 @@ public class DrawUtils {
      * 计算直线斜率
      */
     public static float calSlope(Point point, Point point1) {
-        float k = (point1.getY() - point.getY()) / (point1.getX() - point.getX());
+
+        float k = 0;
+        float y1 = point1.getY();
+        float y = point.getY();
+        float x1 = point1.getX();
+        float x = point.getX();
+
+        if (x1 - x == 0) {  //直线垂直方向
+            k = (y1 - y) / (x1 - x);
+        } else {
+            k = (y1 - y) / (x1 - x);
+        }
         return k;
     }
 
     /**
      * 根据 不同直线上的两个点 求两条直线的相交点x坐标
-     * @param moveLineK 移动线斜率
-     * @param crossLineK 相交线斜率
-     * @param movePoint 移动线抬起时鼠标点坐标
+     *
+     * @param moveLineK   移动线斜率
+     * @param crossLineK  相交线斜率
+     * @param movePoint   移动线抬起时鼠标点坐标
      * @param inwardPoint 相交线的两个坐标中任意一个
      * @return
      */
@@ -267,6 +279,10 @@ public class DrawUtils {
         float y;
         y = k * (x - point.getX()) + point.getY();
         return y;
+    }
+
+    public static void calY() {
+
     }
 
 

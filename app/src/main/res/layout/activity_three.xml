@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.example.hasee.drawtest.ThreeActivity">
+    tools:context="com.example.hasee.drawtest.weidget.Two.success.ThreeActivity">
 
     <LinearLayout
         android:orientation="horizontal"
@@ -22,12 +22,16 @@
             android:id="@+id/close"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:text="close"
+            android:text="封闭图形"
             android:layout_height="wrap_content"/>
 
     </LinearLayout>
 
-    <com.example.hasee.drawtest.weidget.Two.MagicPlanView2
+    <!--<com.example.hasee.drawtest.weidget.Two.original.MagicPlanView-->
+        <!--android:id="@+id/magicPlan_View"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"/>-->
+    <com.example.hasee.drawtest.weidget.Two.success.MagicPlanView2
         android:id="@+id/magicPlan_View"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

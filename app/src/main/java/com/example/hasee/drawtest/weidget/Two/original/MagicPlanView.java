@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest.weidget.Two;
+package com.example.hasee.drawtest.weidget.Two.original;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -33,7 +33,9 @@ import java.util.List;
 
 /**
  * Created by Administrator on 2017/7/24.
- * 第一次改
+ * 第一次改，当绘制完第一个图形后，不跳转页面继续在该VIew中绘制
+ *
+ * 做到一半出现问题，没再继续
  */
 
 public class MagicPlanView extends View {
@@ -67,13 +69,6 @@ public class MagicPlanView extends View {
     private ImageView ivClear;
     private Canvas mCanvas;
 
-
-//    private Path path;
-//    private Paint paint;
-//    private float startX, startY, lastX, lastY;
-//    private int downPosition;
-//    private Point duan1;//选中线的端点1
-//    private Point duan2;//选中线的端点2
     private List<List<Point>> twofoldList;
     private List<TwoPointDistance> distanceList;
     private List<Point> intentPoints, startPointList;

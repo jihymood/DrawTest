@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest;
+package com.example.hasee.drawtest.weidget.One;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -7,9 +7,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.example.hasee.drawtest.R;
 import com.example.hasee.drawtest.model.Point;
 import com.example.hasee.drawtest.utils.DrawUtils;
-import com.example.hasee.drawtest.weidget.One.DrawPolygonView2;
 
 import java.util.ArrayList;
 import java.util.List;

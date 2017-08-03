@@ -10,13 +10,13 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+            <!--<intent-filter>-->
+                <!--<action android:name="android.intent.action.MAIN"/>-->
 
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
+                <!--<category android:name="android.intent.category.LAUNCHER"/>-->
+            <!--</intent-filter>-->
         </activity>
-        <activity android:name=".FirstActivity">
+        <activity android:name=".weidget.One.FirstActivity">
 
             <!-- <intent-filter> -->
             <!-- <action android:name="android.intent.action.MAIN"/> -->
@@ -25,7 +25,7 @@
             <!-- <category android:name="android.intent.category.LAUNCHER"/> -->
             <!-- </intent-filter> -->
         </activity>
-        <activity android:name=".SecondActivity">
+        <activity android:name=".weidget.movelinetest.SecondActivity">
 
             <!-- <intent-filter> -->
             <!-- <action android:name="android.intent.action.MAIN"/> -->
@@ -35,15 +35,19 @@
             <!-- </intent-filter> -->
         </activity>
         <activity
-            android:name=".ThreeActivity"
+            android:name=".weidget.Two.success.ThreeActivity"
             android:launchMode="singleTop">
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN"/>
+                 <category android:name="android.intent.category.LAUNCHER"/>
+             </intent-filter>
         </activity>
         <!-- android:launchMode="singleTask" -->
         <activity
-            android:name=".FourActivity"
-            android:launchMode="singleTop">
+            android:name=".weidget.Two.success.FourActivity"
+            android:launchMode="singleTask">
         </activity>
-        <activity android:name=".FiveActivity">
+        <activity android:name=".weidget.kedutest.FiveActivity">
         </activity>
     </application>
 

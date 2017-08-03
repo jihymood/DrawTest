@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest.weidget.Two;
+package com.example.hasee.drawtest.weidget.Two.success;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -28,7 +28,7 @@ import java.util.List;
  * 原始
  */
 
-public class MagicPlanView1 extends View {
+public class MagicPlanView2 extends View {
     private Context context;
     private List<Point> points = new ArrayList<>();
     private Paint mPaint = new Paint();
@@ -70,17 +70,17 @@ public class MagicPlanView1 extends View {
         return movePoints;
     }
 
-    public MagicPlanView1(Context context) {
+    public MagicPlanView2(Context context) {
         super(context);
         init(context);
     }
 
-    public MagicPlanView1(Context context, @Nullable AttributeSet attrs) {
+    public MagicPlanView2(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }
 
-    public MagicPlanView1(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public MagicPlanView2(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context);
     }
@@ -457,13 +457,15 @@ public class MagicPlanView1 extends View {
     public void closeView() {
         //判断虚线是否有相交线段,相交则无法绘制
         flags.clear();
-        for (int i = 0; i < points.size() - 1; i++) {
-            flag = Utils.segIntersect(points.get(0), points.get(points.size() - 1), points.get(i), points.get(i + 1));
-            flags.add(flag);
-        }
-        if (!flags.contains(1)) {
-            //起点,最后一个点和倒数第二个点在一条直线上,或者第一个点到最后一条线的距离小于10则去掉最后一个点,完成绘制
-            if (points != null && points.size() > 0) {
+        movePoints.clear();
+        if (points != null && points.size() > 1) {
+            for (int i = 0; i < points.size() - 1; i++) {
+                flag = Utils.segIntersect(points.get(0), points.get(points.size() - 1), points.get(i), points.get(i +
+                        1));
+                flags.add(flag);
+            }
+            if (!flags.contains(1)) {
+                //起点,最后一个点和倒数第二个点在一条直线上,或者第一个点到最后一条线的距离小于10则去掉最后一个点,完成绘制
                 if (Utils.segIntersect(points.get(0), points.get(points.size() - 1), points.get(points.size() - 1),
                         lastSecond) == 0
                         || Utils.pointToLine(points.get(0).getX(), points.get(0).getY(), points.get(points.size() -
@@ -479,12 +481,14 @@ public class MagicPlanView1 extends View {
                     linePoints.addAll(points);
                     points.add(points.get(0));
                 }
+
+                invalidate();
+                drawAble = false;
+                isDrawCir = false;
+
+            } else {
+                Toast.makeText(context, "无法完成绘制请调整抬手点", Toast.LENGTH_SHORT).show();
             }
-            invalidate();
-            drawAble = false;
-            isDrawCir = false;
-        } else {
-            Toast.makeText(context, "无法完成绘制请调整抬手点", Toast.LENGTH_SHORT).show();
         }
     }
 

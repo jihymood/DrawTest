@@ -76,20 +76,26 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="FirstActivitt"/>
+            android:text="一"/>
 
         <Button
             android:id="@+id/tiaozhuan2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="SecondActivitt"/>
+            android:text="二"/>
         <Button
             android:id="@+id/tiaozhuan3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="ThreeActivitt"/>
+            android:text="三"/>
+        <Button
+            android:id="@+id/tiaozhuan4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="四"/>
     </LinearLayout>
 
 

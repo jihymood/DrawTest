@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.hasee.drawtest.FiveActivity">
+    android:orientation="vertical"
+    tools:context="com.example.hasee.drawtest.weidget.kedutest.FiveActivity">
 
-</android.support.constraint.ConstraintLayout>
+    <com.example.hasee.drawtest.weidget.kedutest.ReferenceView
+        android:id="@+id/reference_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>

@@ -1,16 +1,19 @@
-package com.example.hasee.drawtest.weidget.Two;
+package com.example.hasee.drawtest.weidget.Two.success;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Typeface;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
+import com.example.hasee.drawtest.model.Line;
 import com.example.hasee.drawtest.model.MyComparator;
 import com.example.hasee.drawtest.model.PoPoListModel;
 import com.example.hasee.drawtest.model.Point;
@@ -18,18 +21,22 @@ import com.example.hasee.drawtest.model.TwoPointDistance;
 import com.example.hasee.drawtest.utils.DensityUtil;
 import com.example.hasee.drawtest.utils.DrawUtils;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by HASEE on 2017/7/27 16:04
+ * 在MyDrawView2基础上修改
+ *
+ * 移动线成功View + 边刻度功能
  */
 
 public class MyDrawView extends View {
 
     private Path path;
-    private Paint paint;
+    private Paint paint,textPaint;
     private float startX, startY, lastX, lastY;
     private int downPosition;
     private List<List<Point>> twofoldList;
@@ -46,6 +53,18 @@ public class MyDrawView extends View {
     private float lStopX;//drawLine的结束点
     private float lStopY;
     private int paintWidth = 10; //红色圆的半径
+
+    private int mColor = 0xFF000000;
+    private int eColor = 0xFFFF0000;
+    private int tColor = 0xFFFF0000;
+    private boolean showParallelLine, showLength, showCutOffLine;//是否显示截止线，平行参考线，长度
+    private boolean flag = true;//默认多边形移动的一边相对原点是扩大的
+    private List<Line> lineList = new ArrayList<>();
+    private List<Line> noSlopeLineList = new ArrayList<>();
+    private List<Line> slope_0_LineList = new ArrayList<>();
+    private List<Line> hasSlope_lineList = new ArrayList<>();
+    private List<Line> referLines = new ArrayList<>();//存储转变坐标后的实际直线
+
 
 
     public MyDrawView(Context context) {
@@ -66,10 +85,18 @@ public class MyDrawView extends View {
     public void init(Context context) {
         path = new Path();
         paint = new Paint();
-        paint.setColor(Color.BLACK);
+        paint.setColor(Color.GRAY);
         paint.setStrokeWidth(5);
-        paint.setStyle(Paint.Style.STROKE);
+        paint.setStyle(Paint.Style.FILL);
         paint.setAntiAlias(true);
+
+        //绘制距离的画笔
+        textPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+        textPaint.setStyle(Paint.Style.STROKE);
+        textPaint.setColor(tColor);
+        textPaint.setStrokeWidth(1);
+        textPaint.setTextSize(30);
+        textPaint.setTypeface(Typeface.SERIF);
 
         twofoldList = new ArrayList<>();
         distanceList = new ArrayList<>();
@@ -97,7 +124,7 @@ public class MyDrawView extends View {
         super.onDraw(canvas);
         path.reset();
         if (twofoldList != null && twofoldList.size() > 0) {
-            paint.setColor(Color.BLACK);
+            paint.setColor(Color.GRAY);
             for (List<Point> points : twofoldList) {
                 if (points != null && points.size() > 0) {
                     path.moveTo(points.get(0).getX(), points.get(0).getY());
@@ -115,6 +142,14 @@ public class MyDrawView extends View {
 //            canvas.drawCircle(first.getX(), first.getY(), paintWidth / 2, mPaint);
             canvas.drawCircle(second.getX(), second.getY(), paintWidth / 2, paint);
         }
+
+
+        if (showLength) {
+//            drawLengthText(lineList,canvas,textPaint);
+            drawReference(lineList, canvas);
+            Log.e("ReferenceView", "onDraw: 开始画标注了");
+        }
+
     }
 
 
@@ -133,6 +168,14 @@ public class MyDrawView extends View {
                         poPoListModel.setList(points);
                         pointModelsList.add(poPoListModel);
                         Log.e("MyDrawView", "downPosition:" + downPosition);
+
+                        if (downPosition == -2) {
+                            Toast.makeText(getContext(), "点击在多边形内", Toast.LENGTH_SHORT).show();
+                            showReference(points);
+                            showLength = true;
+                        }
+
+
                     }
                 }
                 break;
@@ -698,5 +741,173 @@ public class MyDrawView extends View {
 //        return moveinwardPoint;
 //
 //    }
+
+    /*显示标注的方法*/
+    public void showReference(List<Point> list) {
+        /*遍历集合得到List<Line>*/
+        for (int i = 0; i < list.size(); i++) {
+            Line line = new Line();
+            if (i == list.size() - 1) {
+                line.setIndex(list.size());
+                Point p1 = list.get(list.size() - 1);
+                Point p2 = list.get(0);
+                judgeSlope(line, p1, p2);
+                line.setP1(p1);
+                line.setP2(p2);
+                line.setLength(calDistanceByTwoPoint(list.get(0), list.get(list.size() - 1)));
+                lineList.add(line);
+            } else {
+                line.setIndex(i + 1);
+                Point p1 = list.get(i);
+                Point p2 = list.get(i + 1);
+                judgeSlope(line, p1, p2);
+                line.setP1(p1);
+                line.setP2(p2);
+                line.setLength(calDistanceByTwoPoint(list.get(i), list.get(i + 1)));
+                lineList.add(line);
+            }
+            Log.e("ReferenceView", i + ":" + lineList.get(i).toString());
+        }
+    }
+
+
+    public void judgeSlope(Line line, Point p1, Point p2) {
+                /*判断斜率不存在的情况  即垂直直线*/
+        if (p1.getX() == p2.getX()) {
+            line.setSlope(-0.00);
+            if (p1.getY() > p2.getY()) {//垂直线段从下往上绘制
+                line.setDegree(270);
+            } else {
+                line.setDegree(90);//斜率不存在，设置degree为888，防止和斜率为0冲突默认值999
+            }
+            noSlopeLineList.add(line);
+        }/*斜率为0的情况，即水平直线*/
+        /*TODO：此处的degree获取应该判断直线的方向。例如同样两条多边形的两条平行边，斜率相等，却因为绘制的顺序不同，产生的与x轴的夹角不同*/
+
+        if (p1.getY() == p2.getY()) {
+            line.setSlope(0);
+            if (p1.getX() > p2.getX()) {//水平线段从右向左绘制
+                line.setDegree(180);
+            } else {
+                line.setDegree(0);
+            }
+            slope_0_LineList.add(line);
+        }
+        if ((p1.getX() != p2.getX()) && (p1.getY() != p2.getY())) {//斜线
+            double slope = DrawUtils.calSlope(p1, p2);
+            line.setSlope(slope);
+            double degree = Math.toDegrees(Math.atan(slope));
+            line.setDegree(degree);
+            hasSlope_lineList.add(line);
+        }
+    }
+
+    public double calDistanceByTwoPoint(Point p1, Point p2) {
+        DecimalFormat df = new DecimalFormat("#.00");
+        double result = (Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2) + Math.pow(p1.getY() - p2.getY(), 2)));
+        return Double.parseDouble(df.format(result));
+    }
+
+    public double calLengthInLine(Line line) {
+        Point p1 = line.getP1();
+        Point p2 = line.getP2();
+        return calDistanceByTwoPoint(p1, p2);
+    }
+
+    /*画标注的方法*/
+    public void drawReference(List<Line> lines, Canvas canvas) {
+        Line line;
+        Point p1 = null, p2 = null;
+        String length = null;
+        double degree = 999;//默认值999，不存在是888
+        double slope = -0.0;//默认值-0.0不存在，不存在的时候显示-0.0
+        for (int i = 0; i < lines.size(); i++) {
+            /*因为所有标注线的绘制都是以第一条边为参考，所以要判断第一条边的位置状态*/
+            if (i == 0) {
+                line = lines.get(0);
+                p1 = line.getP1();
+                p2 = line.getP2();
+                length = String.valueOf(line.getLength());
+                degree = line.getDegree();
+                slope = line.getSlope();
+                if ("-0.0".equals(String.valueOf(slope))) {//斜率不存在，即是垂直线段
+                    drawLine(0, 90, length, p1, p2, textPaint, canvas);
+                }
+                if (slope == 0.0) {//水平线段
+                    drawLine(0, 0, length, p1, p2, textPaint, canvas);
+                } else {//正常的斜率，包含正负
+                    drawLine(0, degree, length, p1, p2, textPaint, canvas);
+                }
+                /*其他边的绘制逻辑*/
+            } else {
+                /*角度叠加判断 判断上一条线段与x轴的夹角做叠加操作*/
+                line = lines.get(i);
+                p1 = line.getP1();
+                p2 = line.getP2();
+                length = String.valueOf(line.getLength());
+                double flagDegree = lines.get(i - 1).getDegree();//获取上一条线段与x轴的夹角
+                double nowDegree = lines.get(i).getDegree();//现在这条线段与x轴的夹角
+                degree = nowDegree - flagDegree;
+                drawLine(i, degree, length, p1, p2, textPaint, canvas);
+            }
+
+        }
+    }
+
+    /*画每条边的通用方法 参数i表示lineList中line的下标*/
+    public void drawLine(int i, double degree, String length, Point p1, Point p2, Paint textPaint, Canvas canvas) {
+        float stopLength = 40;//截止线距离边的出自己距离
+        float textHeight = 10;//长度text距离边的高度
+        double mLength = Double.valueOf(length);//边长
+        float x1, y1, x2, y2;
+        x1 = p1.getX();
+        y1 = p1.getY();
+        x2 = p2.getX();
+        y2 = p2.getY();
+        /*坐标转换*/
+
+        if (i == 0) {//第一条直线
+            if (y1 == y2) {//水平线段
+                x1 = p1.getX();
+                y1 = p1.getY();
+                x2 = p2.getX();
+                y2 = p2.getY();
+            } else {//因为是第一条直线，所以垂直线段和斜线两种情况相等
+                x1 = p1.getX();
+                y1 = p1.getY();
+                x2 = (float) (x1 + mLength);
+                y2 = y1;
+            }
+            /*存储第一条转变后坐标的直线的两端点*/
+            referLines.add(new Line(new Point(x1, y1), new Point(x2, y2)));
+        } else {//不是第一条直线，那么这条直线的开始端点要参考上一条直线的结束端点,先要判断上一条直线的原始状态
+
+            x1 = referLines.get(i - 1).getP2().getX();
+            y1 = referLines.get(i - 1).getP2().getY();
+            x2 = (float) (x1 + mLength);
+            y2 = y1;
+            referLines.add(new Line(new Point(x1, y1), new Point(x2, y2)));
+        }
+
+        if (i == 0) {
+            canvas.rotate((float) -degree, x1, y1);
+        } else {
+            canvas.rotate((float) degree, x1, y1);
+        }
+//        canvas.drawLine(x1, y1, x2, y2, paintLine);//画多边形的边
+        canvas.drawLine(x1, y1, x1, y1 - stopLength, textPaint);//画截止线
+        canvas.drawLine(x2, y2, x2, y2 - stopLength, textPaint);//画截至线
+        canvas.drawText(length, (x1 + x2) / 2, y1 - textHeight, textPaint);
+        canvas.save();
+    }
+
+    /*一个点到坐标轴原点的距离*/
+    public float disToZreo(Point point) {
+        float x = point.getX();
+        float y = point.getY();
+        return (float) Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    }
+
+
 
 }

@@ -5,9 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.example.hasee.drawtest.SecondActivity">
+    tools:context="com.example.hasee.drawtest.weidget.movelinetest.SecondActivity">
 
-    <com.example.hasee.drawtest.weidget.Two.MoveLineView
+    <com.example.hasee.drawtest.weidget.movelinetest.MoveLineView
         android:id="@+id/move_lineview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

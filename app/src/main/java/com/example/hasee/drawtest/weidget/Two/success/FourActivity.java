@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest;
+package com.example.hasee.drawtest.weidget.Two.success;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,16 +7,16 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.hasee.drawtest.R;
 import com.example.hasee.drawtest.model.Point;
 import com.example.hasee.drawtest.model.PointListModel;
-import com.example.hasee.drawtest.weidget.Two.MyDrawView;
 
 import java.util.List;
 
 public class FourActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static List<Point> getFromPointList;
-    private MyDrawView drawView;
+    private MyDrawView2 drawView;
     private Button addDrawBtn;
 
     @Override
@@ -25,7 +25,7 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_four);
 
         addDrawBtn = (Button) findViewById(R.id.addDrawBtn);
-        drawView = (MyDrawView) findViewById(R.id.myDraw_view);
+        drawView = (MyDrawView2) findViewById(R.id.myDraw_view);
         addDrawBtn.setOnClickListener(this);
 //        getList();
 
@@ -50,6 +50,7 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.addDrawBtn:
                 Intent intent = new Intent(this, ThreeActivity.class);
                 startActivity(intent);
+//                this.finish();
                 break;
             default:
                 break;

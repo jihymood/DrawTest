@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest;
+package com.example.hasee.drawtest.weidget.Two.success;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,9 +8,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.hasee.drawtest.R;
 import com.example.hasee.drawtest.model.Point;
 import com.example.hasee.drawtest.model.PointListModel;
-import com.example.hasee.drawtest.weidget.Two.MagicPlanView2;
 
 import java.io.Serializable;
 import java.util.List;

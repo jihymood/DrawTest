@@ -1,7 +1,9 @@
-package com.example.hasee.drawtest;
+package com.example.hasee.drawtest.weidget.movelinetest;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
+import com.example.hasee.drawtest.R;
 
 public class SecondActivity extends AppCompatActivity {
 

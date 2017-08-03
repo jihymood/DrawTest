@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.example.hasee.drawtest.FourActivity">
+    tools:context="com.example.hasee.drawtest.weidget.Two.success.FourActivity">
 
     <Button
         android:layout_width="match_parent"
@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="添加图形"/>
 
-    <com.example.hasee.drawtest.weidget.Two.MyDrawView
+    <com.example.hasee.drawtest.weidget.Two.success.MyDrawView2
         android:id="@+id/myDraw_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

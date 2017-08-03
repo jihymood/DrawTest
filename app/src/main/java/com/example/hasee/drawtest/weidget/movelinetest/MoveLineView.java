@@ -1,4 +1,4 @@
-package com.example.hasee.drawtest.weidget.Two;
+package com.example.hasee.drawtest.weidget.movelinetest;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -19,6 +19,10 @@ import java.util.List;
 
 /**
  * Created by HASEE on 2017/7/27 16:04
+ *
+ *  移动线测试
+ *
+ *
  */
 
 public class MoveLineView extends View {

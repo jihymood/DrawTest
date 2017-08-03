@@ -9,10 +9,14 @@ import android.widget.Button;
 import com.example.hasee.drawtest.weidget.One.DrawPolygonView;
 import com.example.hasee.drawtest.weidget.One.DrawPolygonView1;
 import com.example.hasee.drawtest.weidget.One.DrawTestView_san;
+import com.example.hasee.drawtest.weidget.One.FirstActivity;
+import com.example.hasee.drawtest.weidget.kedutest.FiveActivity;
+import com.example.hasee.drawtest.weidget.Two.success.ThreeActivity;
+import com.example.hasee.drawtest.weidget.movelinetest.SecondActivity;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private Button clear,tiaozhuan1,tiaozhuan2,tiaozhuan3;
+    private Button clear,tiaozhuan1,tiaozhuan2,tiaozhuan3,tiaozhuan4;
     private DrawPolygonView drawPolygonView;
     private DrawPolygonView1 drawPloygonView1;
     private DrawTestView_san drawTestView;
@@ -26,6 +30,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tiaozhuan1 = (Button) findViewById(R.id.tiaozhuan1);
         tiaozhuan2 = (Button) findViewById(R.id.tiaozhuan2);
         tiaozhuan3 = (Button) findViewById(R.id.tiaozhuan3);
+        tiaozhuan4 = (Button) findViewById(R.id.tiaozhuan4);
         drawPolygonView = (DrawPolygonView) findViewById(R.id.drawPloygonView);
         drawTestView = (DrawTestView_san) findViewById(R.id.drawTestView);
         drawPloygonView1 = (DrawPolygonView1) findViewById(R.id.drawPloygonView1);
@@ -43,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tiaozhuan1.setOnClickListener(this);
         tiaozhuan2.setOnClickListener(this);
         tiaozhuan3.setOnClickListener(this);
+        tiaozhuan4.setOnClickListener(this);
     }
 
     @Override
@@ -56,6 +62,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.tiaozhuan3:
                 startActivity(new Intent(MainActivity.this, ThreeActivity.class));
+                break;
+            case R.id.tiaozhuan4:
+                startActivity(new Intent(MainActivity.this, FiveActivity.class));
                 break;
         }
     }

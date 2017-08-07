@@ -18,7 +18,8 @@ import java.util.List;
 public class ThreeActivity extends AppCompatActivity implements View.OnClickListener {
 
     private Button close, completeBtn;
-    private MagicPlanView2 magicPlanView;
+    private MagicPlanDrawView magicPlanView;
+//    private MagicPlanView2 magicPlanView;
     private List<Point> points;
 
     @Override
@@ -27,11 +28,37 @@ public class ThreeActivity extends AppCompatActivity implements View.OnClickList
         setContentView(R.layout.activity_three);
         close = (Button) findViewById(R.id.close);
         completeBtn = (Button) findViewById(R.id.completeBtn);
-        magicPlanView = (MagicPlanView2) findViewById(R.id.magicPlan_View);
+        magicPlanView = (MagicPlanDrawView) findViewById(R.id.magicPlan_View);
 
         close.setOnClickListener(this);
         completeBtn.setOnClickListener(this);
         close.setOnClickListener(this);
+
+
+        magicPlanView.closeView();
+        points = magicPlanView.getMovePoints();
+        PointListModel pointListModel = PointListModel.getInstance();
+        pointListModel.addList(points);
+        Log.e("ThreeActivity", "pointListModel.getList().size():" + pointListModel.getList().size());
+
+
+//        List<List<Point>> list = pointListModel.getList();
+//        List<PoPoListModel> poPoListModels = new ArrayList<>();
+//        PoPoListModel poListModel = new PoPoListModel();
+//        for (List<Point> pointList : list) {
+//            poListModel.set
+//            poPoListModels.add(pointList);
+//        }
+//        magicPlanView.setShowPolygons(list);
+
+
+        Intent intent = getIntent();
+        if (intent!= null) {
+            float scale = intent.getFloatExtra("scale",1f);
+            magicPlanView.setmScale(scale);
+        }
+
+
 
     }
 
@@ -58,18 +85,14 @@ public class ThreeActivity extends AppCompatActivity implements View.OnClickList
 //                break;
 
             case R.id.close:
-                magicPlanView.closeView();
-                Toast.makeText(ThreeActivity.this, "magicPlanView.getPoints():" + magicPlanView.getPoints().size(),
+                Toast.makeText(ThreeActivity.this, "magicPlanView.getPoints():" + magicPlanView.getMovePoints().size(),
                         Toast.LENGTH_SHORT).show();
                 break;
             case R.id.completeBtn:
-                points = magicPlanView.getPoints();
-                PointListModel pointListModel = PointListModel.getInstance();
-                pointListModel.addList(points);
-                Log.e("ThreeActivity", "pointListModel.getList().size():" + pointListModel.getList().size());
 
                 Intent intent = new Intent(ThreeActivity.this, FourActivity.class);
                 intent.putExtra("pointList", (Serializable) points);
+                intent.putExtra("scale", magicPlanView.getmScale());
                 startActivity(intent);
                 this.finish();
                 break;

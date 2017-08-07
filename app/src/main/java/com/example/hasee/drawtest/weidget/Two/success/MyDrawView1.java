@@ -27,30 +27,35 @@ import java.util.List;
 
 /**
  * Created by HASEE on 2017/7/27 16:04
- * 在MyDrawView2基础上修改
- * 移动线成功View + 边刻度功能
+ * 在MyDrawView1基础上修改
+ * 移动边成功View
  */
 
-public class MyDrawView extends View {
+public class MyDrawView1 extends View {
 
     private Path path;
-    private Paint paint, textPaint;
+    private Paint paint,textPaint;
     private float startX, startY, lastX, lastY;
     private int downPosition;
-    private List<List<Point>> twofoldList;  //所有图形的点的集合
-    private List<TwoPointDistance> distanceList;  //两个吸附点坐标和距离的对象集合
-    private List<Point> intentPoints, startPointList;  //所选图形的集合、除所选图形外其他图形的集合
-    private List<PoPoListModel> pointModelsList, startModelList; //点击点与图形之间联系的对象集合、除所选图形外其他图形的对象集合
+    private List<List<Point>> twofoldList;
+    private List<TwoPointDistance> distanceList;
+    private List<Point> intentPoints, startPointList;
+    private List<PoPoListModel> pointModelsList, startModelList;
     private float adsorbDis;  //吸附距离
-    private float toSidebDis;  //点击点到边的距离
-    private Point first, second; //吸附点1、吸附点2
-
+    private float toSidebDis;  //吸附距离
+    private Point first, second;
+    private Point duan1;//选中线的端点1
+    private Point duan2;//选中线的端点2
     private float lStartX;//drawLine的开始点
     private float lStartY;
     private float lStopX;//drawLine的结束点
     private float lStopY;
     private int paintWidth = 10; //红色圆的半径
 
+
+    private int mColor = 0xFF000000;
+    private int eColor = 0xFFFF0000;
+    private int tColor = 0xFFFF0000;
     private boolean showParallelLine, showLength, showCutOffLine;//是否显示截止线，平行参考线，长度
     private boolean flag = true;//默认多边形移动的一边相对原点是扩大的
     private List<Line> lineList = new ArrayList<>();
@@ -64,34 +69,17 @@ public class MyDrawView extends View {
     private List<Point> rotateCenter = new ArrayList<Point>(pointList.size() + 1);//多边形旋转中心
     private List<Line> referLines = new ArrayList<Line>(pointList.size());//多边形旋转中心
 
-    private int mode;
-    private float preDistance;
-    private float mScale = 1.0f;
-    private float curScale = 1.0f;
-    private int midX;
-    private int midY;
-    private float distance;
-
-    public float getmScale() {
-        return mScale;
-    }
-
-    public void setmScale(float mScale) {
-        this.mScale = mScale;
-        curScale = mScale;
-    }
-
-    public MyDrawView(Context context) {
+    public MyDrawView1(Context context) {
         super(context);
         init(context);
     }
 
-    public MyDrawView(Context context, @Nullable AttributeSet attrs) {
+    public MyDrawView1(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }
 
-    public MyDrawView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public MyDrawView1(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context);
     }
@@ -99,15 +87,15 @@ public class MyDrawView extends View {
     public void init(Context context) {
         path = new Path();
         paint = new Paint();
-        paint.setColor(Color.GRAY);
-        paint.setStrokeWidth(10);
+        paint.setColor(Color.BLACK);
+        paint.setStrokeWidth(5);
         paint.setStyle(Paint.Style.STROKE);
         paint.setAntiAlias(true);
 
         //绘制距离的画笔
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
         textPaint.setStyle(Paint.Style.STROKE);
-        textPaint.setColor(Color.GRAY);
+        textPaint.setColor(tColor);
         textPaint.setStrokeWidth(1);
         textPaint.setTextSize(30);
         textPaint.setTypeface(Typeface.SERIF);
@@ -119,7 +107,7 @@ public class MyDrawView extends View {
         startPointList = new ArrayList<>();
         startModelList = new ArrayList<>();
         adsorbDis = DensityUtil.px2dip(context, 100);
-        toSidebDis = DensityUtil.px2dip(context, 50);
+        toSidebDis = DensityUtil.px2dip(context, 20);
         Log.e("MyDrawView", "adsorbDis:" + adsorbDis + "/toSidebDis:" + toSidebDis);
 
     }
@@ -134,20 +122,12 @@ public class MyDrawView extends View {
 
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        midX = w / 2;
-        midY = h / 2;
-    }
-
-    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         path.reset();
-        canvas.scale(curScale, curScale, midX, midY);
         //画各个图形
         if (twofoldList != null && twofoldList.size() > 0) {
-            paint.setColor(Color.GRAY);
+            paint.setColor(Color.BLACK);
             for (List<Point> points : twofoldList) {
                 if (points != null && points.size() > 0) {
                     path.moveTo(points.get(0).getX(), points.get(0).getY());
@@ -157,10 +137,8 @@ public class MyDrawView extends View {
                 }
                 path.close();
             }
-            canvas.drawPath(path, paint);
-            canvas.save();
         }
-
+        canvas.drawPath(path, paint);
 
         //画吸附后的红点
         if (first != null && second != null) {
@@ -187,12 +165,11 @@ public class MyDrawView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        switch (e.getAction()& MotionEvent.ACTION_MASK) {
+        switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 startX = e.getX();
                 startY = e.getY();
                 pointModelsList.clear();
-                Log.e("MyDrawView", "twofoldList:" + twofoldList.size());
                 for (List<Point> points : twofoldList) {
                     if (points != null && points.size() > 0) {
                         downPosition = ensurePoint(points, startX, startY);
@@ -206,43 +183,19 @@ public class MyDrawView extends View {
                         Log.e("MyDrawView", "downPosition:" + downPosition);
                     }
                 }
-                mode = 1;
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (mode == 2) {
-                    distance = DrawUtils.getDistance(e);
-                    if (distance > 10f) {
-                        curScale = mScale * (distance / preDistance);
-                    }
-                }else {
-                    lastX = e.getX();
-                    lastY = e.getY();
-                    moveLine(pointModelsList, lastX - startX, lastY - startY);
-                    startX = lastX;
-                    startY = lastY;
-
-                }
-
+                lastX = e.getX();
+                lastY = e.getY();
+                moveLine(pointModelsList, lastX - startX, lastY - startY);
+                startX = lastX;
+                startY = lastY;
 
                 break;
             case MotionEvent.ACTION_UP:
                 // TODO: 2017/7/26
                 adsorbResult(pointModelsList);
-                mode = 0;
                 break;
-
-            case MotionEvent.ACTION_POINTER_DOWN:
-                preDistance = DrawUtils.getDistance(e);
-                //当两指间距大于10时，计算两指中心点
-                if (preDistance > 10f) {
-                    mode = 2;
-                }
-                break;
-            case MotionEvent.ACTION_POINTER_UP:
-                mScale = curScale;
-                mode = 0;
-                break;
-
         }
         // 更新绘制
         invalidate();
@@ -288,11 +241,8 @@ public class MyDrawView extends View {
 
     public void moveLine(List<PoPoListModel> list, float dx, float dy) {
         movePoints.clear();
+        List<Point> newList = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
-            List<Point> newList = new ArrayList<>();
-            Point duan1;//选中线的端点1
-            Point duan2;//选中线的端点2
-
             PoPoListModel poPoListModel = list.get(i);
             boolean isInside = poPoListModel.isInside();
             List<Point> singlePointList = poPoListModel.getList(); //点的集合
@@ -398,12 +348,8 @@ public class MyDrawView extends View {
                     singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
                     singlePointList.set(position + 1, pointList.get(1));
                 }
-
             }
         }
-//        drawLine(movePoints);
-//        twofoldList.clear();
-//        twofoldList.add(movePoints);
     }
 
 
@@ -412,29 +358,29 @@ public class MyDrawView extends View {
      *
      * @param points
      */
-//    List<Point> linePoints = new ArrayList<>();
-//    boolean isDrawLine;//是否划线
-//
-//    public void drawLine(List<Point> points) {
-//        isDrawLine = true;
-//        path.reset();
-//        path.moveTo(points.get(downPosition + 1).getX(), points.get(downPosition + 1).getY());
-//        linePoints.clear();
-//        for (int i = downPosition + 1; i < points.size(); i++) {  //画选中那条线（红线）的下半部分
-//            linePoints.add(points.get(i));
-//        }
-//        for (int i = 0; i < downPosition + 1; i++) { //画选中那条线（红线）的上半部分
-//            linePoints.add(points.get(i));
-//        }
-//        for (Point point : linePoints) {  //画红线
-//            path.lineTo(point.getX(), point.getY());
-//        }
-//        lStartX = duan1.getX();
-//        lStartY = duan1.getY();
-//        lStopX = duan2.getX();
-//        lStopY = duan2.getY();
-//        invalidate();
-//    }
+    List<Point> linePoints = new ArrayList<>();
+    boolean isDrawLine;//是否划线
+
+    public void drawLine(List<Point> points) {
+        isDrawLine = true;
+        path.reset();
+        path.moveTo(points.get(downPosition + 1).getX(), points.get(downPosition + 1).getY());
+        linePoints.clear();
+        for (int i = downPosition + 1; i < points.size(); i++) {  //画选中那条线（红线）的下半部分
+            linePoints.add(points.get(i));
+        }
+        for (int i = 0; i < downPosition + 1; i++) { //画选中那条线（红线）的上半部分
+            linePoints.add(points.get(i));
+        }
+        for (Point point : linePoints) {  //画红线
+            path.lineTo(point.getX(), point.getY());
+        }
+        lStartX = duan1.getX();
+        lStartY = duan1.getY();
+        lStopX = duan2.getX();
+        lStopY = duan2.getY();
+        invalidate();
+    }
 
     /**
      * 移动VIEW
@@ -459,22 +405,24 @@ public class MyDrawView extends View {
         }
     }
 
+
     /**
      * 吸附后重置数据
      */
+//    public void adsorbResult(List<Point> intentPoints, List<Point> startPointList) {
     public void adsorbResult(List<PoPoListModel> pointModelsList) {
-//        intentPoints.clear();  //选中图形点集合,千万不能有这句否则有问题
         if (pointModelsList != null && pointModelsList.size() > 1) {  //有多个图形的时候
-            startModelList.clear();  //除选中图形外的所有图形点集合
+//            intentPoints.clear();  //选中图形点集合
+            startModelList.clear();
+
             for (int k = 0; k < pointModelsList.size(); k++) {
                 PoPoListModel poModel = pointModelsList.get(k);
                 int position = poModel.getPosition();
-                if (position == -2) {  //表示选中该图形
+                if (position == -2) {
                     intentPoints = poModel.getList();
+                    pointModelsList.remove(k);
                     for (PoPoListModel poListModel : pointModelsList) {
-                        if (poListModel != poModel) {
-                            startModelList.add(poListModel);
-                        }
+                        startModelList.add(poListModel);
                     }
                     distanceList.clear();
                     for (int i = 0; i < intentPoints.size(); i++) {
@@ -656,13 +604,37 @@ public class MyDrawView extends View {
                 Log.e("MoveLineView", "crosspointX:" + crosspointX + "/" + "crosspointY:" + crosspointY);
             }
         }
-
         return moveinwardPoint;
-
     }
 
+
+    public double calDistanceByTwoPoint(Point p1, Point p2) {
+        DecimalFormat df = new DecimalFormat("#.00");
+        double result = (Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2) + Math.pow(p1.getY() - p2.getY(), 2)));
+        return Double.parseDouble(df.format(result));
+    }
+
+    public double calLengthInLine(Line line) {
+        Point p1 = line.getP1();
+        Point p2 = line.getP2();
+        return calDistanceByTwoPoint(p1, p2);
+    }
+
+    /*两点计算斜率 只限于斜率存在*/
+    public double calSlope(Point p1, Point p2) {
+        return (p2.getY() - p1.getY()) / (p2.getX() - p1.getX());
+    }
+
+    /*直线两端点计算斜率*/
+    public double calSlopeFromLine(Line line) {
+        Point p1 = line.getP1();
+        Point p2 = line.getP2();
+        return (p2.getY() - p1.getY()) / (p2.getX() - p1.getX());
+    }
+
+
     public void judgeSlope(Line line, Point p1, Point p2) {
-        /*判断斜率不存在的情况  即垂直直线*/
+                /*判断斜率不存在的情况  即垂直直线*/
         if (p1.getX() == p2.getX()) {
             line.setSlope(-0.00);
             if (p1.getY() > p2.getY()) {//垂直线段从下往上绘制
@@ -682,7 +654,7 @@ public class MyDrawView extends View {
             slope_0_LineList.add(line);
         }
         if ((p1.getX() != p2.getX()) && (p1.getY() != p2.getY())) {//斜线
-            double slope = DrawUtils.calSlope(p1, p2);
+            double slope = calSlope(p1, p2);
             line.setSlope(slope);
             /*角度范围确保在0到360之间*/
             double degree = Math.toDegrees(Math.atan(slope));
@@ -711,16 +683,14 @@ public class MyDrawView extends View {
         }
     }
 
-    public double calDistanceByTwoPoint(Point p1, Point p2) {
-        DecimalFormat df = new DecimalFormat("#.00");
-        double result = (Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2) + Math.pow(p1.getY() - p2.getY(), 2)));
-        return Double.parseDouble(df.format(result));
-    }
-
-    public double calLengthInLine(Line line) {
-        Point p1 = line.getP1();
-        Point p2 = line.getP2();
-        return calDistanceByTwoPoint(p1, p2);
+    /*获取drawLine所需要的text，坐标点*/
+    public void drawLengthText(List<Line> lines, Canvas canvas, Paint paint) {
+        for (int i = 0; i < lines.size(); i++) {
+            String length = String.valueOf(lines.get(i).getLength());
+            float anchorX = (lines.get(i).getP1().getX() + lines.get(i).getP2().getX()) / 2;
+            float anchorY = (lines.get(i).getP1().getY() + lines.get(i).getP2().getY()) / 2;
+            canvas.drawText(length, anchorX, anchorY, paint);
+        }
     }
 
     /*画标注的方法*/
@@ -766,19 +736,7 @@ public class MyDrawView extends View {
             }
 //        drawReferLine(lines.size(),degree,length,p1,p2,textPaint,canvas);
         }
-
-        Log.e("MyDrawView", "canvas.getSaveCount():" + canvas.getSaveCount());
         canvas.restoreToCount(1);
-        canvas.save();
-        Log.e("MyDrawView", "canvas.getSaveCount()1:" + canvas.getSaveCount());
-//        canvas.drawLine(0, 0, 100, 100, paint);
-    }
-
-    /*一个点到坐标轴原点的距离*/
-    public float disToZreo(Point point) {
-        float x = point.getX();
-        float y = point.getY();
-        return (float) Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     }
 
     /*显示标注的方法*/
@@ -861,8 +819,7 @@ public class MyDrawView extends View {
             }
         }
         /*添加最后一条线段的旋转中心*/
-//        rotateCenter.add(new Point((float) (rotateCenter.get(pointList.size()-1).getX()+calDistanceByTwoPoint
-// (pointList.get(0),pointList.get(pointList.size()-1))),rotateCenter.get(0).getY()));
+//        rotateCenter.add(new Point((float) (rotateCenter.get(pointList.size()-1).getX()+calDistanceByTwoPoint(pointList.get(0),pointList.get(pointList.size()-1))),rotateCenter.get(0).getY()));
     }
 
 }

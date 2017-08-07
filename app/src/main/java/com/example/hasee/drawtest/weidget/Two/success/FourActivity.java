@@ -16,7 +16,7 @@ import java.util.List;
 public class FourActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static List<Point> getFromPointList;
-    private MyDrawView2 drawView;
+    private MyDrawView drawView;
     private Button addDrawBtn;
 
     @Override
@@ -25,7 +25,7 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_four);
 
         addDrawBtn = (Button) findViewById(R.id.addDrawBtn);
-        drawView = (MyDrawView2) findViewById(R.id.myDraw_view);
+        drawView = (MyDrawView) findViewById(R.id.myDraw_view);
         addDrawBtn.setOnClickListener(this);
 //        getList();
 
@@ -34,11 +34,14 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
 
 //        drawView.setTwofoldList(getFromPointList);
         drawView.setAllList(list);
+        getList();
     }
 
     public List<Point> getList() {
         Intent intent = getIntent();
         getFromPointList = (List<Point>) intent.getSerializableExtra("pointList");
+        float scale = intent.getFloatExtra("scale",1f);
+        drawView.setmScale(scale);
         Toast.makeText(this, "getFromPointList.size():" + getFromPointList.size(), Toast.LENGTH_SHORT).show();
         return getFromPointList;
     }
@@ -49,6 +52,8 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.addDrawBtn:
                 Intent intent = new Intent(this, ThreeActivity.class);
+
+                intent.putExtra("scale", drawView.getmScale());
                 startActivity(intent);
 //                this.finish();
                 break;

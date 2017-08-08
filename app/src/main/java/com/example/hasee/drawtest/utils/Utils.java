@@ -138,59 +138,59 @@ public class Utils {
      */
     public static int segIntersect(Point A, Point B, Point C, Point D) {
         Point intersection = new Point();
-        if (Math.abs(B.getY() - A.getY()) + Math.abs(B.getX() - A.getX()) + Math.abs(D.getY() - C.getY())
-                + Math.abs(D.getX() - C.getX()) == 0) {
-            if ((C.getX() - A.getX()) + (C.getY() - A.getY()) == 0) {
+        if (Math.abs((int) B.getY() - (int) A.getY()) + Math.abs((int) B.getX() - (int) A.getX()) + Math.abs((int) D.getY() - (int) C.getY())
+                + Math.abs((int) D.getX() - (int) C.getX()) == 0) {
+            if (((int) C.getX() - (int) A.getX()) + ((int) C.getY() - (int) A.getY()) == 0) {
                 System.out.println("ABCD是同一个点！");
             } else {
                 System.out.println("AB是一个点，CD是一个点，且AC不同！");
             }
             return 0;
         }
-        if (Math.abs(B.getY() - A.getY()) + Math.abs(B.getX() - A.getX()) == 0) {
-            if ((A.getX() - D.getX()) * (C.getY() - D.getY()) - (A.getY() - D.getY()) * (C.getX() - D.getX()) == 0) {
+        if (Math.abs((int) B.getY() - (int) A.getY()) + Math.abs((int) B.getX() - (int) A.getX()) == 0) {
+            if (((int) A.getX() - (int) D.getX()) * ((int) C.getY() - (int) D.getY()) - ((int) A.getY() - (int) D.getY()) * ((int) C.getX() - (int) D.getX()) == 0) {
                 System.out.println("A、B是一个点，且在CD线段上！");
             } else {
                 System.out.println("A、B是一个点，且不在CD线段上！");
             }
             return 0;
         }
-        if (Math.abs(D.getY() - C.getY()) + Math.abs(D.getX() - C.getX()) == 0) {
-            if ((D.getX() - B.getX()) * (A.getY() - B.getY()) - (D.getY() - B.getY()) * (A.getX() - B.getX()) == 0) {
+        if (Math.abs((int) D.getY() - (int) C.getY()) + Math.abs((int) D.getX() - (int) C.getX()) == 0) {
+            if (((int) D.getX() - (int) B.getX()) * ((int) A.getY() - (int) B.getY()) - ((int) D.getY() - (int) B.getY()) * ((int) A.getX() - (int) B.getX()) == 0) {
                 System.out.println("C、D是一个点，且在AB线段上！");
             } else {
                 System.out.println("C、D是一个点，且不在AB线段上！");
             }
             return 0;
         }
-        if ((B.getY() - A.getY()) * (C.getX() - D.getX()) - (B.getX() - A.getX()) * (C.getY() - D.getY()) == 0) {
+        if (((int) B.getY() - (int) A.getY()) * ((int) C.getX() - (int) D.getX()) - ((int) B.getX() - (int) A.getX()) * ((int) C.getY() - (int) D.getY()) == 0) {
 //   System.out.println("线段平行，无交点！");
             return 0;
         }
 
         intersection
-                .setX(((B.getX() - A.getX()) * (C.getX() - D.getX())
-                        * (C.getY() - A.getY()) - C.getX()
-                        * (B.getX() - A.getX()) * (C.getY() - D.getY()) + A
-                        .getX() * (B.getY() - A.getY()) * (C.getX() - D.getX()))
-                        / ((B.getY() - A.getY()) * (C.getX() - D.getX()) - (B
-                        .getX() - A.getX()) * (C.getY() - D.getY())));
+                .setX((((int) B.getX() - (int) A.getX()) * ((int) C.getX() - (int) D.getX())
+                        * ((int) C.getY() - (int) A.getY()) - (int) C.getX()
+                        * ((int) B.getX() - (int) A.getX()) * ((int) C.getY() - (int) D.getY()) + (int) A
+                        .getX() * ((int) B.getY() - (int) A.getY()) * ((int) C.getX() - (int) D.getX()))
+                        / (((int) B.getY() - (int) A.getY()) * ((int) C.getX() - (int) D.getX()) - ((int) B
+                        .getX() - (int) A.getX()) * ((int) C.getY() - (int) D.getY())));
         intersection
-                .setY(((B.getY() - A.getY()) * (C.getY() - D.getY())
-                        * (C.getX() - A.getX()) - C.getY()
-                        * (B.getY() - A.getY()) * (C.getX() - D.getX()) + A
-                        .getY() * (B.getX() - A.getX()) * (C.getY() - D.getY()))
-                        / ((B.getX() - A.getX()) * (C.getY() - D.getY()) - (B
-                        .getY() - A.getY()) * (C.getX() - D.getX())));
-        if ((intersection.getX() - A.getX()) * (intersection.getX() - B.getX()) <= 0
-                && (intersection.getX() - C.getX())
-                * (intersection.getX() - D.getX()) <= 0
-                && (intersection.getY() - A.getY())
-                * (intersection.getY() - B.getY()) <= 0
-                && (intersection.getY() - C.getY())
-                * (intersection.getY() - D.getY()) <= 0) {
-            if ((A.getX() == C.getX() && A.getY() == C.getY()) || (A.getX() == D.getX() && A.getY() == D.getY())
-                    || (B.getX() == C.getX() && B.getY() == C.getY()) || (B.getX() == D.getX() && B.getY() == D.getY())) {
+                .setY((((int) B.getY() - (int) A.getY()) * ((int) C.getY() - (int) D.getY())
+                        * ((int) C.getX() - (int) A.getX()) - (int) C.getY()
+                        * ((int) B.getY() - (int) A.getY()) * ((int) C.getX() - (int) D.getX()) + (int) A
+                        .getY() * ((int) B.getX() - (int) A.getX()) * ((int) C.getY() - (int) D.getY()))
+                        / (((int) B.getX() - (int) A.getX()) * ((int) C.getY() - (int) D.getY()) - ((int) B
+                        .getY() - (int) A.getY()) * ((int) C.getX() - (int) D.getX())));
+        if (((int) intersection.getX() - (int) A.getX()) * ((int) intersection.getX() - (int) B.getX()) <= 0
+                && ((int) intersection.getX() - (int) C.getX())
+                * ((int) intersection.getX() - (int) D.getX()) <= 0
+                && ((int) intersection.getY() - (int) A.getY())
+                * ((int) intersection.getY() - (int) B.getY()) <= 0
+                && ((int) intersection.getY() - (int) C.getY())
+                * ((int) intersection.getY() - (int) D.getY()) <= 0) {
+            if (((int) A.getX() == (int) C.getX() && (int) A.getY() == (int) C.getY()) || ((int) A.getX() == (int) D.getX() && (int) A.getY() == (int) D.getY())
+                    || ((int) B.getX() == (int) C.getX() && (int) B.getY() == (int) C.getY()) || ((int) B.getX() == (int) D.getX() && (int) B.getY() == (int) D.getY())) {
 
                 System.out.println("线段相交于端点上");
                 return 2;
@@ -210,7 +210,6 @@ public class Utils {
 
     /**
      * 画箭头
-     *
      * @param sx
      * @param sy
      * @param ex

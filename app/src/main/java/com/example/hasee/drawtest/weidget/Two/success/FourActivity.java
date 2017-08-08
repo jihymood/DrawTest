@@ -8,16 +8,20 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.hasee.drawtest.R;
+import com.example.hasee.drawtest.model.PoPoListModel;
 import com.example.hasee.drawtest.model.Point;
-import com.example.hasee.drawtest.model.PointListModel;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class FourActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static List<Point> getFromPointList;
+    private List<List<Point>> twofoldList;
     private MyDrawView drawView;
     private Button addDrawBtn;
+    private List<PoPoListModel> polygons;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,14 +31,25 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
         addDrawBtn = (Button) findViewById(R.id.addDrawBtn);
         drawView = (MyDrawView) findViewById(R.id.myDraw_view);
         addDrawBtn.setOnClickListener(this);
+
+//        PointListModel pointListModel = PointListModel.getInstance();
+//        List<List<Point>> list = pointListModel.getList();
+//        drawView.setAllList(list);
 //        getList();
 
-        PointListModel pointListModel = PointListModel.getInstance();
-        List<List<Point>> list = pointListModel.getList();
 
-//        drawView.setTwofoldList(getFromPointList);
-        drawView.setAllList(list);
-        getList();
+        twofoldList = new ArrayList<>();
+        polygons = (List<PoPoListModel>) getIntent().getSerializableExtra("polygons");
+        for (PoPoListModel polygon : polygons) {
+            List<Point> list = polygon.getList();
+            twofoldList.add(list);
+        }
+        drawView.setAllList(twofoldList);
+        float scale = getIntent().getFloatExtra("scale", 1f);
+        drawView.setmScale(scale);
+
+
+
     }
 
     public List<Point> getList() {
@@ -52,10 +67,10 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.addDrawBtn:
                 Intent intent = new Intent(this, ThreeActivity.class);
-
+                intent.putExtra("polygons", (Serializable) drawView.getTwofoldList());
                 intent.putExtra("scale", drawView.getmScale());
                 startActivity(intent);
-//                this.finish();
+                this.finish();
                 break;
             default:
                 break;

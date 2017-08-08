@@ -10,6 +10,13 @@
     <com.example.hasee.drawtest.weidget.movelinetest.MoveLineView
         android:id="@+id/move_lineview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+
+    <com.example.hasee.drawtest.weidget.Two.original.ReferenceView1
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 
 </LinearLayout>

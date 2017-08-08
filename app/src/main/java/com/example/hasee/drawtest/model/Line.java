@@ -1,10 +1,12 @@
 package com.example.hasee.drawtest.model;
 
+import java.io.Serializable;
+
 /**
  * Created by MIUSHUKI on 2017/7/28.
  */
 
-public class Line {
+public class Line implements Serializable{
     private int index;
     private Point p1;
     private Point p2;

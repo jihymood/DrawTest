@@ -13,6 +13,7 @@ public class PointListModel {
 
     private static List<List<Point>> list;
 
+
     public List<List<Point>> getList() {
         return list;
     }

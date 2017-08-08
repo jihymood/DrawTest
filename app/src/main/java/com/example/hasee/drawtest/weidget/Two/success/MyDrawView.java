@@ -38,31 +38,22 @@ public class MyDrawView extends View {
     private float startX, startY, lastX, lastY;
     private int downPosition;
     private List<List<Point>> twofoldList;  //所有图形的点的集合
+    //    private List<PoPoListModel>
     private List<TwoPointDistance> distanceList;  //两个吸附点坐标和距离的对象集合
     private List<Point> intentPoints, startPointList;  //所选图形的集合、除所选图形外其他图形的集合
     private List<PoPoListModel> pointModelsList, startModelList; //点击点与图形之间联系的对象集合、除所选图形外其他图形的对象集合
     private float adsorbDis;  //吸附距离
     private float toSidebDis;  //点击点到边的距离
     private Point first, second; //吸附点1、吸附点2
-
-    private float lStartX;//drawLine的开始点
-    private float lStartY;
-    private float lStopX;//drawLine的结束点
-    private float lStopY;
     private int paintWidth = 10; //红色圆的半径
 
-    private boolean showParallelLine, showLength, showCutOffLine;//是否显示截止线，平行参考线，长度
-    private boolean flag = true;//默认多边形移动的一边相对原点是扩大的
     private List<Line> lineList = new ArrayList<>();
     private List<Line> noSlopeLineList = new ArrayList<>();
     private List<Line> slope_0_LineList = new ArrayList<>();
     private List<Line> hasSlope_lineList = new ArrayList<>();
-    private int count;
     private boolean intoGetReference;
-    private boolean showReference;//是否显示参考线信息
     private List<Point> pointList = new ArrayList<>();
     private List<Point> rotateCenter = new ArrayList<Point>(pointList.size() + 1);//多边形旋转中心
-    private List<Line> referLines = new ArrayList<Line>(pointList.size());//多边形旋转中心
 
     private int mode;
     private float preDistance;
@@ -119,13 +110,14 @@ public class MyDrawView extends View {
         startPointList = new ArrayList<>();
         startModelList = new ArrayList<>();
         adsorbDis = DensityUtil.px2dip(context, 100);
-        toSidebDis = DensityUtil.px2dip(context, 50);
+        toSidebDis = DensityUtil.px2dip(context, 100);
         Log.e("MyDrawView", "adsorbDis:" + adsorbDis + "/toSidebDis:" + toSidebDis);
 
     }
 
-    public void setTwofoldList(List<Point> pointList) {
-        twofoldList.add(pointList);
+
+    public List<List<Point>> getTwofoldList() {
+        return twofoldList;
     }
 
     public void setAllList(List<List<Point>> list) {
@@ -187,10 +179,12 @@ public class MyDrawView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        switch (e.getAction()& MotionEvent.ACTION_MASK) {
+        switch (e.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 startX = e.getX();
                 startY = e.getY();
+//                startX = (e.getX() - midX) / curScale + midX;
+//                startY = (e.getY() - midY) / curScale + midY;
                 pointModelsList.clear();
                 Log.e("MyDrawView", "twofoldList:" + twofoldList.size());
                 for (List<Point> points : twofoldList) {
@@ -214,13 +208,14 @@ public class MyDrawView extends View {
                     if (distance > 10f) {
                         curScale = mScale * (distance / preDistance);
                     }
-                }else {
+                } else {
                     lastX = e.getX();
                     lastY = e.getY();
-                    moveLine(pointModelsList, lastX - startX, lastY - startY);
+//                    lastX = (e.getX() - midX) / curScale + midX;
+//                    lastY = (e.getY() - midY) / curScale + midY;
+                    moveLine(pointModelsList, lastX - startX, lastY - startY, e);
                     startX = lastX;
                     startY = lastY;
-
                 }
 
 
@@ -249,6 +244,25 @@ public class MyDrawView extends View {
         return true;
     }
 
+
+    private void moveCanvas(List<PoPoListModel> showPolygons, MotionEvent e) {
+        for (PoPoListModel polygon : showPolygons) {
+            for (Point point : polygon.getList()) {
+                point.setX((int) (point.getX() + lastX - startX));
+                point.setY((int) (point.getY() + lastY - startY));
+            }
+        }
+//        if (points.size() > 0) {
+//            for (Point p : points) {
+//                p.setX(p.getX() + lastX - startX);
+//                p.setY(p.getY() + lastY - startY);
+//            }
+//            cx = points.get(points.size() - 1).getX();
+//            cy = points.get(points.size() - 1).getY();
+        startX = lastX;
+        startY = lastY;
+//        }
+    }
 
     /**
      * 确定点击点
@@ -286,7 +300,7 @@ public class MyDrawView extends View {
      */
     List<Point> movePoints = new ArrayList<>();//用于存放变化的点
 
-    public void moveLine(List<PoPoListModel> list, float dx, float dy) {
+    public void moveLine(List<PoPoListModel> list, float dx, float dy, MotionEvent e) {
         movePoints.clear();
         for (int i = 0; i < list.size(); i++) {
             List<Point> newList = new ArrayList<>();
@@ -316,6 +330,7 @@ public class MyDrawView extends View {
                     moveView(pointModelsList, dx, dy);
                 } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
 //                    return;
+//                    moveCanvas(list, e);
                 } else if (position == 0) {
                     duan1 = singlePointList.get(position);
                     duan2 = singlePointList.get(position + 1);
@@ -360,6 +375,7 @@ public class MyDrawView extends View {
                     return;
                 } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
 //                    return;
+//                    moveCanvas(list, e);
                 } else if (position == 0) {  //index=-1旁边的直线
                     duan1 = singlePointList.get(position);
                     duan2 = singlePointList.get(position + 1);

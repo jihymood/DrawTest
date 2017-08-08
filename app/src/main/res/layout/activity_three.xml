@@ -18,12 +18,6 @@
             android:layout_weight="1"
             android:text="完成"
             android:layout_height="wrap_content"/>
-        <Button
-            android:id="@+id/close"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:text="封闭图形"
-            android:layout_height="wrap_content"/>
 
     </LinearLayout>
 
@@ -31,7 +25,12 @@
         <!--android:id="@+id/magicPlan_View"-->
         <!--android:layout_width="match_parent"-->
         <!--android:layout_height="match_parent"/>-->
-    <com.example.hasee.drawtest.weidget.Two.success.MagicPlanView2
+    <!--<com.example.hasee.drawtest.weidget.Two.success.MagicPlanView2-->
+        <!--android:id="@+id/magicPlan_View"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"/>-->
+    <com.example.hasee.drawtest.weidget.Two.success.MagicPlanDrawView
+
         android:id="@+id/magicPlan_View"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

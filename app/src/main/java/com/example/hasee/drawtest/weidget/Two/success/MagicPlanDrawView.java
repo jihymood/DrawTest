@@ -76,6 +76,7 @@ public class MagicPlanDrawView extends View {
 
     public List<PoPoListModel> getShowPolygons() {
         return showPolygons;
+
     }
 
     public void setShowPolygons(List<PoPoListModel> showPolygons) {

@@ -2,6 +2,7 @@ package com.example.hasee.drawtest.utils;
 
 import android.content.Context;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.util.DisplayMetrics;
@@ -282,9 +283,19 @@ public class DrawUtils {
         return y;
     }
 
-    public static void calY() {
-
+    /*获取两指之间的距离*/
+    public static float getDistance(MotionEvent event) {
+        int x = (int) (event.getX(1) - event.getX(0));
+        int y = (int) (event.getY(1) - event.getY(0));
+        float distance = (float) Math.sqrt(x * x + y * y);//两点间的距离
+        return distance;
     }
 
+    /*取两指的中心点坐标*/
+    public static PointF getMid(MotionEvent event) {
+        int midX = (int) ((event.getX(1) + event.getX(0)) / 2);
+        int midY = (int) ((event.getY(1) + event.getY(0)) / 2);
+        return new PointF(midX, midY);
+    }
 
 }

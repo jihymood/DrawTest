@@ -332,23 +332,17 @@ public class MagicPlanDrawView extends View {
                         //更新点
                         startX = lastX;
                         startY = lastY;
-                        cx = lastX;
-                        cy = lastY;
                     }
                 } else if (isHaveJDWithPolygons(lastSecond, new Point(x, y))) {
                     lineLocation();
                     //更新点
                     startX = lastX;
                     startY = lastY;
-                    cx = lastX;
-                    cy = lastY;
                 } else {
                     lineLocation();
                     //更新点
                     startX = lastX;
                     startY = lastY;
-                    cx = lastX;
-                    cy = lastY;
                 }
             }
         } else if (points.size() == 1) {
@@ -397,12 +391,12 @@ public class MagicPlanDrawView extends View {
             lastSecond = points.get(points.size() - 2);
             dx = Math.abs(lastSecond.getX() - x);
             dy = Math.abs(lastSecond.getY() - y);
-            if (dy < 40) {
+            if (dy < 80) {
                 points.get(points.size() - 1).setX(x);
                 points.get(points.size() - 1).setY(lastSecond.getY());
                 cx = x;
                 cy = lastSecond.getY();
-            } else if (dx < 40) {
+            } else if (dx < 80) {
                 points.get(points.size() - 1).setX(lastSecond.getX());
                 points.get(points.size() - 1).setY(y);
                 cx = lastSecond.getX();

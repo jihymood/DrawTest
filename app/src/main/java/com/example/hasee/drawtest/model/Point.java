@@ -7,8 +7,17 @@ import java.io.Serializable;
  */
 
 public class Point implements Serializable{
-    private float x;
-    private float y;
+    private float x;  //x坐标
+    private float y;  //y坐标
+    private boolean isLock;
+
+    public boolean isLock() {
+        return isLock;
+    }
+
+    public void setLock(boolean lock) {
+        isLock = lock;
+    }
 
     public float getX() {
         return x;

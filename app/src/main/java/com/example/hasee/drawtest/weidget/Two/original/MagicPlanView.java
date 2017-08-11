@@ -21,7 +21,6 @@ import android.widget.Toast;
 import com.example.hasee.drawtest.model.MyComparator;
 import com.example.hasee.drawtest.model.PoPoListModel;
 import com.example.hasee.drawtest.model.Point;
-import com.example.hasee.drawtest.model.PointListModel;
 import com.example.hasee.drawtest.model.TwoPointDistance;
 import com.example.hasee.drawtest.utils.DensityUtil;
 import com.example.hasee.drawtest.utils.DrawUtils;
@@ -192,8 +191,8 @@ public class MagicPlanView extends View {
     public boolean onTouchEvent(MotionEvent e) {
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                PointListModel pointListModel = PointListModel.getInstance();
-                twofoldList = pointListModel.getList();
+//                PointListModel pointListModel = PointListModel.getInstance();
+//                twofoldList = pointListModel.getList();
 
                 downTime = System.currentTimeMillis();
                 if (drawAble) {
@@ -604,9 +603,6 @@ public class MagicPlanView extends View {
         movePoints.clear();
         for (int i = 0; i < list.size(); i++) {
             PoPoListModel poPoListModel = list.get(i);
-
-            boolean isInside = poPoListModel.isInside();
-
 
             int position = poPoListModel.getPosition();
             if (position == -3) {  //表示点击点在多边形外,不执行任何操作

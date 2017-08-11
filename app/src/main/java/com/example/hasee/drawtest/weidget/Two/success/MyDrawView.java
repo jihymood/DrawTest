@@ -1,6 +1,7 @@
 package com.example.hasee.drawtest.weidget.Two.success;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -19,8 +20,10 @@ import com.example.hasee.drawtest.model.Point;
 import com.example.hasee.drawtest.model.TwoPointDistance;
 import com.example.hasee.drawtest.utils.DensityUtil;
 import com.example.hasee.drawtest.utils.DrawUtils;
+import com.example.hasee.drawtest.utils.Utils;
 
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +44,7 @@ public class MyDrawView extends View {
     //    private List<PoPoListModel>
     private List<TwoPointDistance> distanceList;  //两个吸附点坐标和距离的对象集合
     private List<Point> intentPoints, startPointList;  //所选图形的集合、除所选图形外其他图形的集合
+    private List<Point> singleList; //单个图形的点的集合
     private List<PoPoListModel> pointModelsList, startModelList; //点击点与图形之间联系的对象集合、除所选图形外其他图形的对象集合
     private float adsorbDis;  //吸附距离
     private float toSidebDis;  //点击点到边的距离
@@ -62,6 +66,27 @@ public class MyDrawView extends View {
     private int midX;
     private int midY;
     private float distance;
+    private IShowChangeLongViewListener listener;
+    private boolean isDrawDuan = false;
+    private Double longNum;
+    private Point duan1;
+    private Point duan2;
+    private Point p1;
+    private Point p2;
+    private Point moveP1 = new Point();
+    private Point moveP2 = new Point();
+    private Bitmap mBufferBitmap;
+    private Canvas mBufferCanvas;
+
+
+
+    public IShowChangeLongViewListener getListener() {
+        return listener;
+    }
+
+    public void setListener(IShowChangeLongViewListener listener) {
+        this.listener = listener;
+    }
 
     public float getmScale() {
         return mScale;
@@ -70,6 +95,12 @@ public class MyDrawView extends View {
     public void setmScale(float mScale) {
         this.mScale = mScale;
         curScale = mScale;
+    }
+
+    public interface IShowChangeLongViewListener {
+        void showView(String lineLong);
+
+        void cancelView();
     }
 
     public MyDrawView(Context context) {
@@ -103,6 +134,7 @@ public class MyDrawView extends View {
         textPaint.setTextSize(30);
         textPaint.setTypeface(Typeface.SERIF);
 
+        singleList = new ArrayList<>();
         twofoldList = new ArrayList<>();
         distanceList = new ArrayList<>();
         pointModelsList = new ArrayList<>();
@@ -116,14 +148,26 @@ public class MyDrawView extends View {
     }
 
 
-    public List<List<Point>> getTwofoldList() {
-        return twofoldList;
-    }
-
     public void setAllList(List<List<Point>> list) {
         this.twofoldList = list;
     }
 
+    public List<List<Point>> getTwofoldList() {
+        return twofoldList;
+    }
+
+    /**
+     * 获取所有图形集合方法
+     *
+     * @return
+     */
+    public List<PoPoListModel> getAllModelList() {
+        return pointModelsList;
+    }
+
+    public void setAllModelList(List<PoPoListModel> list) {
+        this.pointModelsList = list;
+    }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -135,24 +179,9 @@ public class MyDrawView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        canvas.drawColor(Color.WHITE); //设置背景颜色
         path.reset();
         canvas.scale(curScale, curScale, midX, midY);
-        //画各个图形
-        if (twofoldList != null && twofoldList.size() > 0) {
-            paint.setColor(Color.GRAY);
-            for (List<Point> points : twofoldList) {
-                if (points != null && points.size() > 0) {
-                    path.moveTo(points.get(0).getX(), points.get(0).getY());
-                    for (int i = 1; i < points.size(); i++) {
-                        path.lineTo(points.get(i).getX(), points.get(i).getY());
-                    }
-                }
-                path.close();
-            }
-            canvas.drawPath(path, paint);
-            canvas.save();
-        }
-
 
         //画吸附后的红点
         if (first != null && second != null) {
@@ -160,20 +189,48 @@ public class MyDrawView extends View {
             canvas.drawCircle(second.getX(), second.getY(), paintWidth / 2, paint);
         }
 
-        //画标注
+        //画图形和标注
         if (pointModelsList != null && pointModelsList.size() > 0) {
+            paint.setColor(Color.GRAY);
             for (PoPoListModel poPoListModel : pointModelsList) {
+                List<Point> points = poPoListModel.getList();
+                if (points != null && points.size() > 0) {
+                    path.moveTo(points.get(0).getX(), points.get(0).getY());
+                    for (int i = 1; i < points.size(); i++) {
+                        path.lineTo(points.get(i).getX(), points.get(i).getY());
+                    }
+                }
+                path.close();
+                canvas.drawPath(path, paint);
+                canvas.save();
+
                 lineList.clear();
-                List<Point> list = poPoListModel.getList();
                 int position = poPoListModel.getPosition();
                 boolean showLength = poPoListModel.isShowLength();
                 if (position == -2 && showLength == true) {
-                    getRotateCenter(list);
-                    getRefereceInfo(list);
+                    getRotateCenter(points);
+                    getRefereceInfo(points);
                     drawReference(lineList, canvas);
                 }
             }
         }
+
+
+    }
+
+    public Bitmap initBitmap() {
+        mBufferBitmap = Bitmap.createBitmap(getWidth()/3, getHeight()/3, Bitmap.Config.ARGB_8888);
+        mBufferCanvas = new Canvas(mBufferBitmap);
+        draw(mBufferCanvas);
+        return mBufferBitmap;
+    }
+
+
+    public Bitmap buildBitmap() {
+        Bitmap bm = getDrawingCache();
+        Bitmap result = Bitmap.createBitmap(bm);
+        destroyDrawingCache();
+        return result;
     }
 
 
@@ -181,51 +238,99 @@ public class MyDrawView extends View {
     public boolean onTouchEvent(MotionEvent e) {
         switch (e.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
-                startX = e.getX();
-                startY = e.getY();
-//                startX = (e.getX() - midX) / curScale + midX;
-//                startY = (e.getY() - midY) / curScale + midY;
-                pointModelsList.clear();
-                Log.e("MyDrawView", "twofoldList:" + twofoldList.size());
-                for (List<Point> points : twofoldList) {
-                    if (points != null && points.size() > 0) {
-                        downPosition = ensurePoint(points, startX, startY);
-                        PoPoListModel poPoListModel = new PoPoListModel();
-                        poPoListModel.setPosition(downPosition);
-                        poPoListModel.setList(points);
+                startX = (e.getX() - midX) / curScale + midX;
+                startY = (e.getY() - midY) / curScale + midY;
+                for (PoPoListModel poListModel : pointModelsList) {
+                    singleList = poListModel.getList();  //全局变量
+//                    List<Point> singleList = poListModel.getList();  //局部变量
+                    if (singleList != null && singleList.size() > 0) {
+                        downPosition = ensurePoint(singleList, startX, startY);
+                        poListModel.setPosition(downPosition);
                         if (downPosition == -2) {
-                            poPoListModel.setShowLength(true);
+                            poListModel.setShowLength(true);
+                            poListModel.setIsMOveCanvas(false);
+                        } else if (downPosition == -3) {
+                            poListModel.setIsMOveCanvas(true);
+                        } else {
+                            poListModel.setIsMOveCanvas(false);
                         }
-                        pointModelsList.add(poPoListModel);
-                        Log.e("MyDrawView", "downPosition:" + downPosition);
+
+
+                        if (downPosition == -2) {
+                            listener.cancelView();
+                            isDrawDuan = false;
+                        } else if (downPosition == -3) {
+                            listener.cancelView();
+                            isDrawDuan = false;
+                        } else if (downPosition == -1) {
+                            duan1 = singleList.get(singleList.size() - 1);
+                            duan2 = singleList.get(0);
+                            p1 = singleList.get(singleList.size() - 2);
+                            p2 = singleList.get(1);
+                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                    duan2.getY()) / 2) <= 90
+                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
+                                    () + duan2.getY()) / 2) >= 50) {
+                                setView();
+                                isDrawDuan = true;
+                                return true;
+                            } else {
+                                listener.cancelView();
+                                isDrawDuan = false;
+                            }
+                        } else if (downPosition == 0) {
+                            duan1 = singleList.get(0);
+                            duan2 = singleList.get(1);
+                            p1 = singleList.get(singleList.size() - 1);
+                            p2 = singleList.get(2);
+                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                    duan2.getY()) / 2) <= 90
+                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
+                                    () + duan2.getY()) / 2) >= 50) {
+                                setView();
+                                isDrawDuan = true;
+                                return true;
+                            } else {
+                                listener.cancelView();
+                                isDrawDuan = false;
+                            }
+                        } else if (downPosition == singleList.size() - 2) {
+                            duan1 = singleList.get(downPosition);
+                            duan2 = singleList.get(downPosition + 1);
+                            p1 = singleList.get(downPosition - 1);
+                            p2 = singleList.get(0);
+                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                    duan2.getY()) / 2) <= 90
+                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
+                                    () + duan2.getY()) / 2) >= 50) {
+                                setView();
+                                isDrawDuan = true;
+                                return true;
+                            } else {
+                                listener.cancelView();
+                                isDrawDuan = false;
+                            }
+                        } else {
+                            duan1 = singleList.get(downPosition);
+                            duan2 = singleList.get(downPosition + 1);
+                            p1 = singleList.get(downPosition - 1);
+                            p2 = singleList.get(downPosition + 2);
+                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                    duan2.getY()) / 2) <= 90
+                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
+                                    () + duan2.getY()) / 2) >= 50) {
+                                setView();
+                                isDrawDuan = true;
+                                return true;
+                            } else {
+                                listener.cancelView();
+                                isDrawDuan = false;
+                            }
+                        }
                     }
                 }
                 mode = 1;
                 break;
-            case MotionEvent.ACTION_MOVE:
-                if (mode == 2) {
-                    distance = DrawUtils.getDistance(e);
-                    if (distance > 10f) {
-                        curScale = mScale * (distance / preDistance);
-                    }
-                } else {
-                    lastX = e.getX();
-                    lastY = e.getY();
-//                    lastX = (e.getX() - midX) / curScale + midX;
-//                    lastY = (e.getY() - midY) / curScale + midY;
-                    moveLine(pointModelsList, lastX - startX, lastY - startY, e);
-                    startX = lastX;
-                    startY = lastY;
-                }
-
-
-                break;
-            case MotionEvent.ACTION_UP:
-                // TODO: 2017/7/26
-                adsorbResult(pointModelsList);
-                mode = 0;
-                break;
-
             case MotionEvent.ACTION_POINTER_DOWN:
                 preDistance = DrawUtils.getDistance(e);
                 //当两指间距大于10时，计算两指中心点
@@ -233,9 +338,31 @@ public class MyDrawView extends View {
                     mode = 2;
                 }
                 break;
+            case MotionEvent.ACTION_MOVE:
+                if (mode == 2) {
+                    distance = DrawUtils.getDistance(e);
+                    if (distance > 10f) {
+                        curScale = mScale * (distance / preDistance);
+                    }
+                } else if (mode == 1) {
+                    lastX = (e.getX() - midX) / curScale + midX;
+                    lastY = (e.getY() - midY) / curScale + midY;
+                    moveLine(pointModelsList,new Point(lastX, lastY), lastX - startX, lastY - startY);
+                    startX = lastX;
+                    startY = lastY;
+                }
+//                if (mBufferBitmap == null) {
+//                    initBuffer();
+//                }
+                break;
             case MotionEvent.ACTION_POINTER_UP:
                 mScale = curScale;
                 mode = 0;
+                break;
+            case MotionEvent.ACTION_UP:
+                mode = 0;
+                // TODO: 2017/7/26
+                adsorbResult(pointModelsList);
                 break;
 
         }
@@ -244,24 +371,27 @@ public class MyDrawView extends View {
         return true;
     }
 
+    private void setView() {
+        double lineLong = Utils.lineSpace(duan1.getX(), duan1.getY(), duan2.getX(), duan2.getY());
+        NumberFormat format = new DecimalFormat("0.00");
+        listener.showView(format.format(lineLong / 50).toString());
+    }
 
-    private void moveCanvas(List<PoPoListModel> showPolygons, MotionEvent e) {
-        for (PoPoListModel polygon : showPolygons) {
-            for (Point point : polygon.getList()) {
-                point.setX((int) (point.getX() + lastX - startX));
-                point.setY((int) (point.getY() + lastY - startY));
-            }
+
+    /**
+     * 移动画布
+     *
+     * @param showPolygons 点的集合
+     * @param dx           x偏移量
+     * @param dy           y偏移量
+     */
+    private void moveCanvas(List<Point> showPolygons, float dx, float dy) {
+        for (Point point : showPolygons) {
+            point.setX(point.getX() + dx);
+            point.setY(point.getY() + dy);
         }
-//        if (points.size() > 0) {
-//            for (Point p : points) {
-//                p.setX(p.getX() + lastX - startX);
-//                p.setY(p.getY() + lastY - startY);
-//            }
-//            cx = points.get(points.size() - 1).getX();
-//            cy = points.get(points.size() - 1).getY();
         startX = lastX;
         startY = lastY;
-//        }
     }
 
     /**
@@ -286,13 +416,26 @@ public class MyDrawView extends View {
                 minL = l1;
             }
         }
-        if (minL <= toSidebDis) {
+//        if (minL <= toSidebDis) {
+//            return position;//根据position获取要移动线的 端点
+//        } else if (DrawUtils.PtInRegion(new Point(startX, startY), pp) == 1 && minL > toSidebDis) {
+//            return -2;//表示点击点在多边形内,执行移动view
+//        } else {
+//            return -3;//表示点击点在多边形外,不执行任何操作
+//        }
+
+        if (minL <= toSidebDis/2) {
             return position;//根据position获取要移动线的 端点
-        } else if (DrawUtils.PtInRegion(new Point(startX, startY), pp) == 1 && minL > toSidebDis) {
+        } else if (Utils.PtInRegion(new Point(startX, startY), pp) == 1 && minL > toSidebDis) {
             return -2;//表示点击点在多边形内,执行移动view
+        } else if (Utils.PtInRegion(new Point(startX, startY), pp) == -1 && minL > toSidebDis/2 && minL <
+                toSidebDis*2) {
+            return position;//根据position获取要移动线的 端点
         } else {
             return -3;//表示点击点在多边形外,不执行任何操作
         }
+
+
     }
 
     /**
@@ -300,157 +443,273 @@ public class MyDrawView extends View {
      */
     List<Point> movePoints = new ArrayList<>();//用于存放变化的点
 
-    public void moveLine(List<PoPoListModel> list, float dx, float dy, MotionEvent e) {
+    public void moveLine(List<PoPoListModel> list, Point movePoint, float dx, float dy) {
+        int count = 0;
         movePoints.clear();
+        for (PoPoListModel poListModel : list) {
+            if (poListModel.getPosition() != -3) {  //表示选中图形或者某条边
+                count++;
+            }
+        }
+        if (count == 0) { //没有选中任何图形或者边,将isMoveCanvas置为false进入-3的判断条件
+            for (PoPoListModel poListModel : list) {
+                poListModel.setIsMOveCanvas(false);
+            }
+        }
+
         for (int i = 0; i < list.size(); i++) {
             List<Point> newList = new ArrayList<>();
-            Point duan1;//选中线的端点1
-            Point duan2;//选中线的端点2
+            Point duan1;//选中线的端点1, 局部变量
+            Point duan2;//选中线的端点2, 局部变量
 
             PoPoListModel poPoListModel = list.get(i);
-            boolean isInside = poPoListModel.isInside();
+            boolean isMoveCanvas = poPoListModel.isMOveCanvas();
             List<Point> singlePointList = poPoListModel.getList(); //点的集合
             int position = poPoListModel.getPosition();
 
             if (singlePointList.size() == 3) {  //三角形
-                if (position == -1) {   //选中倒数第二个点和起点的那条直线
-                    duan1 = singlePointList.get(0);
-                    duan2 = singlePointList.get(singlePointList.size() - 1);
+                if (isMoveCanvas == false) {
+                    if (position == -1) {   //选中倒数第二个点和起点的那条直线
+                        duan1 = singlePointList.get(0);
+                        duan2 = singlePointList.get(singlePointList.size() - 1);
 
-                    newList.add(duan1);
-                    newList.add(duan2);
-                    newList.add(singlePointList.get(1));
-                    newList.add(singlePointList.get(1));
+                        newList.add(duan1);
+                        newList.add(duan2);
+                        newList.add(singlePointList.get(1));
+                        newList.add(singlePointList.get(1));
 
-                    List<Point> pointList = getPoint(newList, new Point(lastX, lastY));
-                    singlePointList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-                    singlePointList.set(singlePointList.size() - 1, pointList.get(1));
+                        List<Point> pointList = getPoint(newList, movePoint);
+                        singlePointList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+                        singlePointList.set(singlePointList.size() - 1, pointList.get(1));
 
-                } else if (position == -2) {  //选中整体图形{
-                    moveView(pointModelsList, dx, dy);
-                } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
+                    } else if (position == -2) {  //选中整体图形{
+                        moveView(singlePointList, dx, dy);
+                    } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
 //                    return;
-//                    moveCanvas(list, e);
-                } else if (position == 0) {
-                    duan1 = singlePointList.get(position);
-                    duan2 = singlePointList.get(position + 1);
+                        moveCanvas(singlePointList, dx, dy);
+                    } else if (position == 0) {
+                        duan1 = singlePointList.get(position);
+                        duan2 = singlePointList.get(position + 1);
 
-                    newList.add(duan1);
-                    newList.add(duan2);
-                    newList.add(singlePointList.get(2));
-                    newList.add(singlePointList.get(2));
+                        newList.add(duan1);
+                        newList.add(duan2);
+                        newList.add(singlePointList.get(2));
+                        newList.add(singlePointList.get(2));
 
-                    List<Point> pointList = getPoint(newList, new Point(lastX, lastY));
-                    singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-                    singlePointList.set(position + 1, pointList.get(1));
-                } else if (position == 1) {
-                    duan1 = singlePointList.get(position);
-                    duan2 = singlePointList.get(position + 1);
-                    newList.add(duan1);
-                    newList.add(duan2);
-                    newList.add(singlePointList.get(0));
-                    newList.add(singlePointList.get(0));
+                        List<Point> pointList = getPoint(newList, movePoint);
+                        singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+                        singlePointList.set(position + 1, pointList.get(1));
+                    } else if (position == 1) {
+                        duan1 = singlePointList.get(position);
+                        duan2 = singlePointList.get(position + 1);
+                        newList.add(duan1);
+                        newList.add(duan2);
+                        newList.add(singlePointList.get(0));
+                        newList.add(singlePointList.get(0));
 
-                    List<Point> pointList = getPoint(newList, new Point(lastX, lastY));
-                    singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-                    singlePointList.set(position + 1, pointList.get(1));
+                        List<Point> pointList = getPoint(newList, movePoint);
+                        singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+                        singlePointList.set(position + 1, pointList.get(1));
+                    }
                 }
             } else if (singlePointList.size() > 3) {   //表示多边形
-                //通过ensurePoint获得position,判断position
-                if (position == -1) {   //选中倒数第二个点和起点的那条直线
-                    duan1 = singlePointList.get(0);
-                    duan2 = singlePointList.get(singlePointList.size() - 1);
+                if (isMoveCanvas == false) {
+                    //通过ensurePoint获得position,判断position
+                    if (position == -1) {   //选中倒数第二个点和起点的那条直线
+                        duan1 = singlePointList.get(0);
+                        duan2 = singlePointList.get(singlePointList.size() - 1);
 
-                    newList.add(duan1);
-                    newList.add(duan2);
-                    newList.add(singlePointList.get(singlePointList.size() - 2));
-                    newList.add(singlePointList.get(1));
+                        newList.add(duan1);
+                        newList.add(duan2);
+                        newList.add(singlePointList.get(singlePointList.size() - 2));
+                        newList.add(singlePointList.get(1));
 
-                    List<Point> pointList = getPoint(newList, new Point(lastX, lastY));
-                    singlePointList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-                    singlePointList.set(singlePointList.size() - 1, pointList.get(1));
+                        List<Point> pointList = getPoint(newList, movePoint);
+                        singlePointList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+                        singlePointList.set(singlePointList.size() - 1, pointList.get(1));
 
-                } else if (position == -2) {  //选中整体图形
-                    moveView(pointModelsList, dx, dy);
-                    return;
-                } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
+                    } else if (position == -2) {  //选中整体图形
+                        moveView(singlePointList, dx, dy);
+                        return;
+                    } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
 //                    return;
-//                    moveCanvas(list, e);
-                } else if (position == 0) {  //index=-1旁边的直线
-                    duan1 = singlePointList.get(position);
-                    duan2 = singlePointList.get(position + 1);
+                        moveCanvas(singlePointList, dx, dy);
+                    } else if (position == 0) {  //index=-1旁边的直线
+                        duan1 = singlePointList.get(position);
+                        duan2 = singlePointList.get(position + 1);
 
-                    newList.add(duan1);
-                    newList.add(duan2);
-                    newList.add(singlePointList.get(position + 2));
-                    newList.add(singlePointList.get(singlePointList.size() - 1));
+                        newList.add(duan1);
+                        newList.add(duan2);
+                        newList.add(singlePointList.get(position + 2));
+                        newList.add(singlePointList.get(singlePointList.size() - 1));
 
-                    List<Point> pointList = getPoint(newList, new Point(lastX, lastY));
-                    singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-                    singlePointList.set(position + 1, pointList.get(1));
+                        List<Point> pointList = getPoint(newList, movePoint);
+                        singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+                        singlePointList.set(position + 1, pointList.get(1));
 
-                } else if (position == singlePointList.size() - 2) { //index=-1旁边的直线
+                    } else if (position == singlePointList.size() - 2) { //index=-1旁边的直线
 
-                    duan1 = singlePointList.get(position);
-                    duan2 = singlePointList.get(position + 1);
-                    newList.add(duan1);
-                    newList.add(duan2);
-                    newList.add(singlePointList.get(0));
-                    newList.add(singlePointList.get(position - 1));
+                        duan1 = singlePointList.get(position);
+                        duan2 = singlePointList.get(position + 1);
+                        newList.add(duan1);
+                        newList.add(duan2);
+                        newList.add(singlePointList.get(0));
+                        newList.add(singlePointList.get(position - 1));
 
-                    List<Point> pointList = getPoint(newList, new Point(lastX, lastY));
-                    singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-                    singlePointList.set(position + 1, pointList.get(1));
+                        List<Point> pointList = getPoint(newList, movePoint);
+                        singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+                        singlePointList.set(position + 1, pointList.get(1));
 
-                } else {
-                    duan1 = singlePointList.get(position);
-                    duan2 = singlePointList.get(position + 1);
-                    newList.add(duan1);
-                    newList.add(duan2);
-                    newList.add(singlePointList.get(position + 2));
-                    newList.add(singlePointList.get(position - 1));
+                    } else {
+                        duan1 = singlePointList.get(position);
+                        duan2 = singlePointList.get(position + 1);
+                        newList.add(duan1);
+                        newList.add(duan2);
+                        newList.add(singlePointList.get(position + 2));
+                        newList.add(singlePointList.get(position - 1));
 
-                    List<Point> pointList = getPoint(newList, new Point(lastX, lastY));
-                    singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-                    singlePointList.set(position + 1, pointList.get(1));
+                        List<Point> pointList = getPoint(newList, movePoint);
+                        singlePointList.set(position, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+                        singlePointList.set(position + 1, pointList.get(1));
+                    }
                 }
 
             }
         }
-//        drawLine(movePoints);
-//        twofoldList.clear();
-//        twofoldList.add(movePoints);
+    }
+
+    public void moveLine(Point duan1, Point duan2, Point movePoint, int downPosition, float dx, float dy) {
+        List<Point> newList = new ArrayList<>();
+        if (singleList.size() == 3) {  //三角形
+            if (downPosition == -1) {   //选中倒数第二个点和起点的那条直线
+                duan1 = singleList.get(0);
+                duan2 = singleList.get(singleList.size() - 1);
+                newList.add(duan1);
+                newList.add(duan2);
+                newList.add(singleList.get(1));
+                newList.add(singleList.get(1));
+                List<Point> pointList = getPoint(newList, movePoint);
+                singleList.get(0).setX(pointList.get(0).getX());
+                singleList.get(0).setY(pointList.get(0).getY());
+                singleList.get(singleList.size() - 1).setX(pointList.get(1).getX());
+                singleList.get(singleList.size() - 1).setY(pointList.get(1).getY());
+//                singleList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+//                singleList.set(singleList.size() - 1, pointList.get(1));
+
+            } else if (downPosition == -2) {  //选中整体图形{
+                moveView(singleList, dx, dy);
+            } else if (downPosition == -3) {  //表示点击点在多边形外,不执行任何操作
+//                moveCanvas((int) dx, (int) dy);
+                moveCanvas(singleList, dx, dy);
+            } else if (downPosition == 0) {
+                duan1 = singleList.get(downPosition);
+                duan2 = singleList.get(downPosition + 1);
+                newList.add(duan1);
+                newList.add(duan2);
+                newList.add(singleList.get(2));
+                newList.add(singleList.get(2));
+                List<Point> pointList = getPoint(newList, movePoint);
+                singleList.get(downPosition).setX(pointList.get(0).getX());
+                singleList.get(downPosition).setY(pointList.get(0).getY());
+                singleList.get(downPosition + 1).setX(pointList.get(1).getX());
+                singleList.get(downPosition + 1).setY(pointList.get(1).getY());
+//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+//                singleList.set(downPosition + 1, pointList.get(1));
+            } else if (downPosition == 1) {
+                duan1 = singleList.get(downPosition);
+                duan2 = singleList.get(downPosition + 1);
+                newList.add(duan1);
+                newList.add(duan2);
+                newList.add(singleList.get(0));
+                newList.add(singleList.get(0));
+                List<Point> pointList = getPoint(newList, movePoint);
+                singleList.get(downPosition).setX(pointList.get(0).getX());
+                singleList.get(downPosition).setY(pointList.get(0).getY());
+                singleList.get(downPosition + 1).setX(pointList.get(1).getX());
+                singleList.get(downPosition + 1).setY(pointList.get(1).getY());
+//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+//                singleList.set(downPosition + 1, pointList.get(1));
+            }
+        } else if (singleList.size() > 3) {   //表示多边形
+            //通过ensurePoint获得downPosition,判断downPosition
+            if (downPosition == -1) {   //选中倒数第二个点和起点的那条直线
+                duan1 = singleList.get(0);
+                duan2 = singleList.get(singleList.size() - 1);
+                newList.add(duan1);
+                newList.add(duan2);
+                newList.add(singleList.get(singleList.size() - 2));
+                newList.add(singleList.get(1));
+
+                List<Point> pointList = getPoint(newList, movePoint);
+                pointList.get(0).setLock(true);
+                pointList.get(1).setLock(true);
+                singleList.get(0).setX(pointList.get(0).getX());
+                singleList.get(0).setY(pointList.get(0).getY());
+                singleList.get(singleList.size() - 1).setX(pointList.get(1).getX());
+                singleList.get(singleList.size() - 1).setY(pointList.get(1).getY());
+//                singleList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+//                singleList.set(singleList.size() - 1, pointList.get(1));
+
+            } else if (downPosition == -2) {  //选中整体图形
+//                moveView((int) dx, (int) dy);
+                moveView(singleList, dx, dy);
+            } else if (downPosition == -3) {  //表示点击点在多边形外,不执行任何操作
+//                moveCanvas((int) dx, (int) dy);
+                moveCanvas(singleList, dx, dy);
+            } else if (downPosition == 0) {  //index=-1旁边的直线
+                duan1 = singleList.get(downPosition);
+                duan2 = singleList.get(downPosition + 1);
+                newList.add(duan1);
+                newList.add(duan2);
+                newList.add(singleList.get(downPosition + 2));
+                newList.add(singleList.get(singleList.size() - 1));
+
+                List<Point> pointList = getPoint(newList, movePoint);
+                singleList.get(downPosition).setX(pointList.get(0).getX());
+                singleList.get(downPosition).setY(pointList.get(0).getY());
+                singleList.get(downPosition + 1).setX(pointList.get(1).getX());
+                singleList.get(downPosition + 1).setY(pointList.get(1).getY());
+//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+//                singleList.set(downPosition + 1, pointList.get(1));
+
+            } else if (downPosition == singleList.size() - 2) { //index=-1旁边的直线
+
+                duan1 = singleList.get(downPosition);
+                duan2 = singleList.get(downPosition + 1);
+                newList.add(duan1);
+                newList.add(duan2);
+                newList.add(singleList.get(0));
+                newList.add(singleList.get(downPosition - 1));
+
+                List<Point> pointList = getPoint(newList, movePoint);
+                singleList.get(downPosition).setX(pointList.get(0).getX());
+                singleList.get(downPosition).setY(pointList.get(0).getY());
+                singleList.get(downPosition + 1).setX(pointList.get(1).getX());
+                singleList.get(downPosition + 1).setY(pointList.get(1).getY());
+//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+//                singleList.set(downPosition + 1, pointList.get(1));
+
+            } else {
+                duan1 = singleList.get(downPosition);
+                duan2 = singleList.get(downPosition + 1);
+                newList.add(duan1);
+                newList.add(duan2);
+                newList.add(singleList.get(downPosition + 2));
+                newList.add(singleList.get(downPosition - 1));
+                List<Point> pointList = getPoint(newList, movePoint);
+                singleList.get(downPosition).setX(pointList.get(0).getX());
+                singleList.get(downPosition).setY(pointList.get(0).getY());
+                singleList.get(downPosition + 1).setX(pointList.get(1).getX());
+                singleList.get(downPosition + 1).setY(pointList.get(1).getY());
+//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
+//                singleList.set(downPosition + 1, pointList.get(1));
+            }
+
+        }
     }
 
 
-    /**
-     * 重绘选中直线后图形
-     *
-     * @param points
-     */
-//    List<Point> linePoints = new ArrayList<>();
-//    boolean isDrawLine;//是否划线
-//
-//    public void drawLine(List<Point> points) {
-//        isDrawLine = true;
-//        path.reset();
-//        path.moveTo(points.get(downPosition + 1).getX(), points.get(downPosition + 1).getY());
-//        linePoints.clear();
-//        for (int i = downPosition + 1; i < points.size(); i++) {  //画选中那条线（红线）的下半部分
-//            linePoints.add(points.get(i));
-//        }
-//        for (int i = 0; i < downPosition + 1; i++) { //画选中那条线（红线）的上半部分
-//            linePoints.add(points.get(i));
-//        }
-//        for (Point point : linePoints) {  //画红线
-//            path.lineTo(point.getX(), point.getY());
-//        }
-//        lStartX = duan1.getX();
-//        lStartY = duan1.getY();
-//        lStopX = duan2.getX();
-//        lStopY = duan2.getY();
-//        invalidate();
-//    }
+
 
     /**
      * 移动VIEW
@@ -458,20 +717,11 @@ public class MyDrawView extends View {
      * @param dx
      * @param dy
      */
-    public void moveView(List<PoPoListModel> pointListModels, float dx, float dy) {
-        for (PoPoListModel pointListModel : pointListModels) {
-            int position = pointListModel.getPosition();
-            if (position == -2) {
-                List<Point> list = pointListModel.getList();
-                for (Point p : list) {
-                    p.setX(p.getX() + dx);
-                    p.setY(p.getY() + dy);
-                }
-                anewDraw(list, path);
-            } else {
-                List<Point> list = pointListModel.getList();
-//                aOldDraw(list, path);
-            }
+    public void moveView(List<Point> pointList, float dx, float dy) {
+
+        for (Point point : pointList) {
+            point.setX(point.getX() + dx);
+            point.setY(point.getY() + dy);
         }
     }
 
@@ -880,5 +1130,294 @@ public class MyDrawView extends View {
 //        rotateCenter.add(new Point((float) (rotateCenter.get(pointList.size()-1).getX()+calDistanceByTwoPoint
 // (pointList.get(0),pointList.get(pointList.size()-1))),rotateCenter.get(0).getY()));
     }
+
+
+    public void setLongNum(Double longNum) {
+        this.longNum = longNum;
+        double ll = Utils.lineSpace(duan1.getX(), duan1.getY(), duan2.getX(), duan2.getY());
+        double l = (longNum * 50 - ll) / 2;
+        float k = Utils.calSlope(duan1, duan2);
+//        if (!duan1.isLock() && !duan2.isLock() && !p1.isLock() && !p2.isLock()) {
+            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
+                if (duan1.getY() < duan2.getY()) {
+                    moveP1.setX(duan1.getX());
+                    moveP1.setY((float) (duan1.getY() - l));
+                    moveP2.setX(duan2.getX());
+                    moveP2.setY((float) (duan2.getY() + l));
+                } else if (duan1.getY() > duan2.getY()) {
+                    moveP1.setX(duan1.getX());
+                    moveP1.setY((float) (duan1.getY() + l));
+                    moveP2.setX(duan2.getX());
+                    moveP2.setY((float) (duan2.getY() - l));
+                }
+            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
+                if (duan1.getX() < duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() - l));
+                    moveP1.setY(duan1.getY());
+                    moveP2.setX((float) (duan2.getX() + l));
+                    moveP2.setY(duan2.getY());
+                } else if (duan1.getX() > duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() + l));
+                    moveP1.setY(duan1.getY());
+                    moveP2.setX((float) (duan2.getX() - l));
+                    moveP2.setY(duan2.getY());
+                }
+            } else {
+                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, l);
+                double dx = dxAdy[0];
+                double dy = dxAdy[1];
+                if (duan1.getX() < duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() - dx));
+                    moveP1.setY((float) (duan1.getY() - dy));
+                    moveP2.setX((float) (duan2.getX() + dx));
+                    moveP2.setY((float) (duan2.getY() + dy));
+                } else if (duan1.getX() > duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() + dx));
+                    moveP1.setY((float) (duan1.getY() + dy));
+                    moveP2.setX((float) (duan2.getX() - dx));
+                    moveP2.setY((float) (duan2.getY() - dy));
+                }
+            }
+            int position;
+            if (downPosition == -1) {
+                position = singleList.size() - 2;
+            } else {
+                position = downPosition - 1;
+            }
+            moveLine(p1, duan1, moveP1, position, 0, 0);
+            duan1.setX(moveP1.getX());
+            duan1.setY(moveP1.getY());
+            if (position == -1) {
+                Point p = singleList.get(singleList.size() - 1);
+                p1.setX(p.getX());
+                p1.setY(p.getY());
+            } else {
+                Point p = singleList.get(position);
+                p1.setX(p.getX());
+                p1.setY(p.getY());
+            }
+
+            if (downPosition == singleList.size() - 2) {
+                position = -1;
+            } else {
+                position = downPosition + 1;
+            }
+            moveLine(duan2, p2, moveP2, position, 0, 0);
+            duan2.setX(moveP2.getX());
+            duan2.setY(moveP2.getY());
+            if (position == -1) {
+                Point p = singleList.get(0);
+                p2.setX(p.getX());
+                p2.setY(p.getY());
+            } else {
+                Point p = singleList.get(position + 1);
+                p2.setX(p.getX());
+                p2.setY(p.getY());
+            }
+            duan1.setLock(true);
+            duan2.setLock(true);
+        /*} else if (duan1.isLock() && !duan2.isLock() && !p2.isLock()) {
+            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
+                if (duan1.getY() < duan2.getY()) {
+                    moveP2.setX(duan2.getX());
+                    moveP2.setY((float) (duan2.getY() + 2 * l));
+                } else if (duan1.getY() > duan2.getY()) {
+                    moveP2.setX(duan2.getX());
+                    moveP2.setY((float) (duan2.getY() - 2 * l));
+                }
+            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
+                if (duan1.getX() < duan2.getX()) {
+                    moveP2.setX((float) (duan2.getX() + 2 * l));
+                    moveP2.setY(duan2.getY());
+                } else if (duan1.getX() > duan2.getX()) {
+                    moveP2.setX((float) (duan2.getX() - 2 * l));
+                    moveP2.setY(duan2.getY());
+                }
+            } else {
+                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
+                double dx = dxAdy[0];
+                double dy = dxAdy[1];
+                if (duan1.getX() < duan2.getX()) {
+                    moveP2.setX((float) (duan2.getX() + dx));
+                    moveP2.setY((float) (duan2.getY() + dy));
+                } else if (duan1.getX() > duan2.getX()) {
+                    moveP2.setX((float) (duan2.getX() - dx));
+                    moveP2.setY((float) (duan2.getY() - dy));
+                }
+            }
+            int position;
+            if (downPosition == singleList.size() - 2) {
+                position = -1;
+            } else {
+                position = downPosition + 1;
+            }
+            moveLine(duan2, p2, moveP2, position, 0, 0);
+            duan2.setX(moveP2.getX());
+            duan2.setY(moveP2.getY());
+            if (position == -1) {
+                Point p = singleList.get(0);
+                p2.setX(p.getX());
+                p2.setY(p.getY());
+            } else {
+                Point p = singleList.get(position + 1);
+                p2.setX(p.getX());
+                p2.setY(p.getY());
+            }
+            duan2.setLock(true);
+        } else if (!duan1.isLock() && duan2.isLock() && !p1.isLock()) {
+            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
+                if (duan1.getY() < duan2.getY()) {
+                    moveP1.setX(duan1.getX());
+                    moveP1.setY((float) (duan1.getY() - 2 * l));
+                } else if (duan1.getY() > duan2.getY()) {
+                    moveP1.setX(duan1.getX());
+                    moveP1.setY((float) (duan1.getY() + 2 * l));
+                }
+            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
+                if (duan1.getX() < duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() - 2 * l));
+                    moveP1.setY(duan1.getY());
+                } else if (duan1.getX() > duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() + 2 * l));
+                    moveP1.setY(duan1.getY());
+                }
+            } else {
+                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
+                double dx = dxAdy[0];
+                double dy = dxAdy[1];
+                if (duan1.getX() < duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() - dx));
+                    moveP1.setY((float) (duan1.getY() - dy));
+                } else if (duan1.getX() > duan2.getX()) {
+                    moveP1.setX((float) (duan1.getX() + dx));
+                    moveP1.setY((float) (duan1.getY() + dy));
+                }
+            }
+            int position;
+            if (downPosition == -1) {
+                position = singleList.size() - 2;
+            } else {
+                position = downPosition - 1;
+            }
+            moveLine(p1, duan1, moveP1, position, 0, 0);
+            duan1.setX(moveP1.getX());
+            duan1.setY(moveP1.getY());
+            if (position == -1) {
+                Point p = singleList.get(singleList.size() - 1);
+                p1.setX(p.getX());
+                p1.setY(p.getY());
+            } else {
+                Point p = singleList.get(position);
+                p1.setX(p.getX());
+                p1.setY(p.getY());
+            }
+            duan1.setLock(true);
+        } else if ((duan1.isLock() && duan2.isLock())
+                || (!duan1.isLock() && !duan2.isLock() && p1.isLock() && p2.isLock())){
+            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
+                if (duan1.getY() < duan2.getY()) {
+                    duan1.setX(duan1.getX());
+                    duan1.setY((float) (duan1.getY() - l));
+                    duan2.setX(duan2.getX());
+                    duan2.setY((float) (duan2.getY() + l));
+                } else if (duan1.getY() > duan2.getY()) {
+                    duan1.setX(duan1.getX());
+                    duan1.setY((float) (duan1.getY() + l));
+                    duan2.setX(duan2.getX());
+                    duan2.setY((float) (duan2.getY() - l));
+                }
+            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
+                if (duan1.getX() < duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() - l));
+                    duan1.setY(duan1.getY());
+                    duan2.setX((float) (duan2.getX() + l));
+                    duan2.setY(duan2.getY());
+                } else if (duan1.getX() > duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() + l));
+                    duan1.setY(duan1.getY());
+                    duan2.setX((float) (duan2.getX() - l));
+                    duan2.setY(duan2.getY());
+                }
+            } else {
+                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, l);
+                double dx = dxAdy[0];
+                double dy = dxAdy[1];
+                if (duan1.getX() < duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() - dx));
+                    duan1.setY((float) (duan1.getY() - dy));
+                    duan2.setX((float) (duan2.getX() + dx));
+                    duan2.setY((float) (duan2.getY() + dy));
+                } else if (duan1.getX() > duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() + dx));
+                    duan1.setY((float) (duan1.getY() + dy));
+                    duan2.setX((float) (duan2.getX() - dx));
+                    duan2.setY((float) (duan2.getY() - dy));
+                }
+            }
+        } else if (duan1.isLock() && !duan2.isLock() && p2.isLock()) {
+            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
+                if (duan1.getY() < duan2.getY()) {
+                    duan2.setX(duan2.getX());
+                    duan2.setY((float) (duan2.getY() + 2 * l));
+                } else if (duan1.getY() > duan2.getY()) {
+                    duan2.setX(duan2.getX());
+                    duan2.setY((float) (duan2.getY() - 2 * l));
+                }
+            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
+                if (duan1.getX() < duan2.getX()) {
+                    duan2.setX((float) (duan2.getX() + 2 * l));
+                    duan2.setY(duan2.getY());
+                } else if (duan1.getX() > duan2.getX()) {
+                    duan2.setX((float) (duan2.getX() - 2 * l));
+                    duan2.setY(duan2.getY());
+                }
+            } else {
+                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
+                double dx = dxAdy[0];
+                double dy = dxAdy[1];
+                if (duan1.getX() < duan2.getX()) {
+                    duan2.setX((float) (duan2.getX() + dx));
+                    duan2.setY((float) (duan2.getY() + dy));
+                } else if (duan1.getX() > duan2.getX()) {
+                    duan2.setX((float) (duan2.getX() - dx));
+                    duan2.setY((float) (duan2.getY() - dy));
+                }
+                duan2.setLock(true);
+            }
+        } else if (duan2.isLock() && !duan1.isLock() && p1.isLock())
+            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
+                if (duan1.getY() < duan2.getY()) {
+                    duan1.setX(duan1.getX());
+                    duan1.setY((float) (duan1.getY() - 2 * l));
+                } else if (duan1.getY() > duan2.getY()) {
+                    duan1.setX(duan1.getX());
+                    duan1.setY((float) (duan1.getY() + 2 * l));
+                }
+            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
+                if (duan1.getX() < duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() - 2 * l));
+                    duan1.setY(duan1.getY());
+                } else if (duan1.getX() > duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() + 2 * l));
+                    duan1.setY(duan1.getY());
+                }
+            } else {
+                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
+                double dx = dxAdy[0];
+                double dy = dxAdy[1];
+                if (duan1.getX() < duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() - dx));
+                    duan1.setY((float) (duan1.getY() - dy));
+                } else if (duan1.getX() > duan2.getX()) {
+                    duan1.setX((float) (duan1.getX() + dx));
+                    duan1.setY((float) (duan1.getY() + dy));
+                }
+                duan1.setLock(true);
+            }*/
+
+        //更新绘制
+        invalidate();
+    }
+
 
 }

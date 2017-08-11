@@ -1,6 +1,5 @@
 package com.example.hasee.drawtest.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -8,11 +7,17 @@ import java.util.List;
  */
 
 public class PointListModel {
-
     private static PointListModel pointListModel;
+    private static List<List<Point>> list; //图形点的集合
+    private static List<PoPoListModel> listModels; //图形对象集合，应该使用面向对象的思想开发
 
-    private static List<List<Point>> list;
+    public List<PoPoListModel> getListModels() {
+        return listModels;
+    }
 
+    public void setListModels(List<PoPoListModel> listModels) {
+        this.listModels = listModels;
+    }
 
     public List<List<Point>> getList() {
         return list;
@@ -29,12 +34,16 @@ public class PointListModel {
         list.add(points);
     }
 
-    public static PointListModel getInstance() {
-        if (pointListModel == null) {
-            list = new ArrayList<>();
-            pointListModel = new PointListModel();
-        }
-        return pointListModel;
-    }
+//    public static PointListModel getInstance() {
+//        if (pointListModel == null) {
+//            list = new ArrayList<>();
+//            listModels = new ArrayList<>();
+//            pointListModel = new PointListModel();
+//        }
+//        return pointListModel;
+//    }
+
+
+
 
 }

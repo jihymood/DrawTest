@@ -14,11 +14,13 @@ import java.util.List;
 
 public class PoPoListModel implements Serializable {
 
-    private int position;
-    private List<Point> list;
-    private boolean isShowLength;
-    private List<Line> lines;
+    private int position; //选中图形的状态 ：-2选中图形 -3在图形外面 -1/0/1/2...选中图形的边
+    private List<Point> list; //点的集合
+    private boolean isShowLength; //是否显示标注
+    private List<Line> lines; //线的集合
     private List<Point> centerPoints;
+    private boolean isMOveCanvas; //是否移动画布
+
 
     public PoPoListModel(List<Point> list) {
         this.list = list;
@@ -27,7 +29,13 @@ public class PoPoListModel implements Serializable {
     public PoPoListModel() {
     }
 
+    public boolean isMOveCanvas() {
+        return isMOveCanvas;
+    }
 
+    public void setIsMOveCanvas(boolean MOveCanvas) {
+        isMOveCanvas = MOveCanvas;
+    }
 
     public boolean isShowLength() {
         return isShowLength;
@@ -53,12 +61,6 @@ public class PoPoListModel implements Serializable {
         this.list = list;
     }
 
-    public boolean isInside() {
-        if (position == -2) {
-            return true;
-        }
-        return false;
-    }
 
     public boolean inPolygon(float x, float y) {
         //形成封闭多边形

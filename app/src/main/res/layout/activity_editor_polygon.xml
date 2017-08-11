@@ -1,32 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context="com.example.hasee.drawtest.weidget.Two.success.FourActivity">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/addDrawBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="添加图形"/>
-
-        <Button
-            android:id="@+id/saveDrawBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="保存图形"/>
-
-    </LinearLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -34,7 +10,6 @@
 
         <Button
             android:id="@+id/bnt_draw_new"
-            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="完成"/>
@@ -75,22 +50,8 @@
         </LinearLayout>
     </RelativeLayout>
 
-
-    <!--<com.example.hasee.drawtest.weidget.Two.success.MyDrawView-->
-    <!--android:id="@+id/myDraw_view"-->
-    <!--android:layout_width="match_parent"-->
-    <!--android:layout_height="match_parent"/>-->
-
-    <com.example.hasee.drawtest.weidget.Two.success.MyDrawView
-        android:id="@+id/myDraw_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
     <com.example.hasee.drawtest.weidget.Two.success.MagicPlanEditorView
-        android:visibility="gone"
-        android:id="@+id/editor_view"
+        android:id="@+id/magicPlan"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
-
-
 </LinearLayout>

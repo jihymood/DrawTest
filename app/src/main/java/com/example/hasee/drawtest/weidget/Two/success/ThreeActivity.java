@@ -9,7 +9,6 @@ import android.widget.Toast;
 
 import com.example.hasee.drawtest.R;
 import com.example.hasee.drawtest.model.PoPoListModel;
-import com.example.hasee.drawtest.model.Point;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,52 +29,26 @@ public class ThreeActivity extends AppCompatActivity implements View.OnClickList
 
         completeBtn.setOnClickListener(this);
 
+
         polygons = new ArrayList<>();
-//        List<PoPoListModel> polygons = (List<PoPoListModel>) getIntent().getSerializableExtra("polygons");
-        List<List<Point>> points = (List<List<Point>>) getIntent().getSerializableExtra("polygons");
-        if (points != null && points.size() > 0) {
-            for (List<Point> point : points) {
-                PoPoListModel poListModel = new PoPoListModel();
-                poListModel.setList(point);
-                polygons.add(poListModel);
-            }
-            if (polygons != null) {
-                magicPlanView.setShowPolygons(polygons);
-            }
+        List<PoPoListModel> polygons = (List<PoPoListModel>) getIntent().getSerializableExtra("polygons");
+        if (polygons != null) {
+            magicPlanView.setShowPolygons(polygons);
         }
         float curScale = getIntent().getFloatExtra("scale", 1f);
         magicPlanView.setmScale(curScale);
-
-
-
-
-//        List<List<Point>> list = pointListModel.getList();
-//        List<PoPoListModel> poPoListModels = new ArrayList<>();
-//        PoPoListModel poListModel = new PoPoListModel();
-//        for (List<Point> pointList : list) {
-//            poListModel.set
-//            poPoListModels.add(pointList);
-//        }
-//        magicPlanView.setShowPolygons(list);
-
-//        Intent intent = getIntent();
-//        if (intent!= null) {
-//            float scale = intent.getFloatExtra("scale",1f);
-//            magicPlanView.setmScale(scale);
-//        }
-
 
 
     }
 
     @Override
     public void onClick(View v) {
-
         switch (v.getId()) {
             case R.id.completeBtn:
                 if (magicPlanView.closeView()) {
                     List<PoPoListModel> polygons = magicPlanView.getShowPolygons();
                     if (polygons.size() > 0 && polygons != null) {
+//                        Intent intent = new Intent(ThreeActivity.this, EditorPolygonActivity.class);
                         Intent intent = new Intent(ThreeActivity.this, FourActivity.class);
                         intent.putExtra("polygons", (Serializable) polygons);
                         intent.putExtra("scale", magicPlanView.getmScale());
@@ -87,18 +60,6 @@ public class ThreeActivity extends AppCompatActivity implements View.OnClickList
                 } else {
                     Toast.makeText(ThreeActivity.this, "图形不符合要求,请重新绘制", Toast.LENGTH_SHORT).show();
                 }
-
-//                magicPlanView.closeView();
-//                points = magicPlanView.getMovePoints();
-//                PointListModel pointListModel = PointListModel.getInstance();
-//                pointListModel.addList(points);
-//                Log.e("ThreeActivity", "pointListModel.getList().size():" + pointListModel.getList().size());
-//
-//                Intent intent = new Intent(ThreeActivity.this, FourActivity.class);
-//                intent.putExtra("pointList", (Serializable) points);
-//                intent.putExtra("scale", magicPlanView.getmScale());
-//                startActivity(intent);
-//                this.finish();
                 break;
             default:
                 break;

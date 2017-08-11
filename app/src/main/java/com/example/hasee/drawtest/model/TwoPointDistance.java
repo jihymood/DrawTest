@@ -5,9 +5,9 @@ package com.example.hasee.drawtest.model;
  */
 
 public class TwoPointDistance  {
-    public Point first;
-    public Point second;
-    public float distance;
+    public Point first; //两个吸附点
+    public Point second; //两个吸附点
+    public float distance;  //吸附点之间的距离
 
     public Point getFirst() {
         return first;

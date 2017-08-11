@@ -10,6 +10,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 
+import com.example.hasee.drawtest.model.Line;
 import com.example.hasee.drawtest.model.Point;
 
 import java.math.BigDecimal;
@@ -285,17 +286,57 @@ public class DrawUtils {
 
     /*获取两指之间的距离*/
     public static float getDistance(MotionEvent event) {
-        int x = (int) (event.getX(1) - event.getX(0));
-        int y = (int) (event.getY(1) - event.getY(0));
+        float x =event.getX(1) - event.getX(0);
+        float y =event.getY(1) - event.getY(0);
         float distance = (float) Math.sqrt(x * x + y * y);//两点间的距离
         return distance;
     }
 
     /*取两指的中心点坐标*/
     public static PointF getMid(MotionEvent event) {
-        int midX = (int) ((event.getX(1) + event.getX(0)) / 2);
-        int midY = (int) ((event.getY(1) + event.getY(0)) / 2);
+        float midX = (event.getX(1) + event.getX(0)) / 2;
+        float midY = (event.getY(1) + event.getY(0)) / 2;
         return new PointF(midX, midY);
+    }
+
+    /**
+     * 根据斜率求偏移量dx,dy
+     *
+     * @param p1 端点1
+     * @param p2 端点2
+     * @param l  偏移距离
+     * @return
+     */
+    public static double[] getDxAndDy(Point p1, Point p2, double l) {
+        float k = Utils.calSlope(p1, p2);
+        double dx = l * Math.sqrt(1 / (k * k + 1));
+        double dy = k * dx;
+        return new double[]{dx, dy};
+    }
+
+
+    public static Point getLineP(Line l) {
+        Point duan1 = l.getP1();
+        Point duan2 = l.getP2();
+        //y=ax+b
+        float x1 = duan1.getX();
+        float y1 = duan1.getY();
+        float x2 = duan2.getX();
+        float y2 = duan2.getY();
+        double k = 0;
+        if (x1 != x2) {
+            k = (y2 - y1) / (x2 - x1);
+        }
+        double n = (x1 + x2) / 2;
+        double m = (y1 + y2) / 2;
+        double dx = Math.sqrt(1600 / (k * k + 1));
+        double dy = k * dx;
+        if (x1 < x2) {
+            return new Point((int) (n - dx), (int) (m - dy));
+        } else {
+            return new Point((int) (n + dx), (int) (m + dy));
+        }
+
     }
 
 }

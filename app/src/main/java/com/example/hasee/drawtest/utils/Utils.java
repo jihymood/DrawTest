@@ -131,6 +131,18 @@ public class Utils {
         return lineLength;
     }
 
+    // 计算两点之间的距离
+    public static double lineSpace(Point p1, Point p2) {
+        float x1 = p1.getX();
+        float x2 = p2.getX();
+        float y1 = p1.getY();
+        float y2 = p2.getY();
+        double lineLength = 0;
+        lineLength = Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2)
+                * (y1 - y2));
+        return lineLength;
+    }
+
 
     /**
      * 判断两条线是否相交 a 线段1起点坐标 b 线段1终点坐标 c 线段2起点坐标 d 线段2终点坐标 intersection 相交点坐标
@@ -469,6 +481,97 @@ public class Utils {
         double qy2 = vk * qx2 + b2;
         points.add(new Point((int) qx2, (int) qy2));
         return points;
+    }
+
+    /**
+     * 获取一个点绕着一个点逆时针旋转后的新点坐标
+     *
+     * @param p1     圆点
+     * @param p2     起始点
+     * @param degree 逆时针旋转角度
+     * @return
+     */
+    public static Point getNewPByDegree(Point p1, Point p2, Double degree) {
+        double a = 2 * Math.PI / 360 * degree;
+        Point newP = new Point();
+        float rx0 = p1.getX();
+        float ry0 = -p1.getY();
+        float x = p2.getX();
+        float y = -p2.getY();
+        float x0 = (float) ((x - rx0) * Math.cos(a) - (y - ry0) * Math.sin(a) + rx0);
+        float y0 = (float) ((x - rx0) * Math.sin(a) + (y - ry0) * Math.cos(a) + ry0);
+        newP.setX(x0);
+        newP.setY(-y0);
+        return newP;
+    }
+
+    public static double getDegreeByK(Point p1, Point p2) {
+        double slope = Utils.calSlope(p1, p2);
+            /*角度范围确保在0到360之间*/
+        double degree = Math.toDegrees(Math.atan(slope));
+        if (p1.getX() > p2.getX()) {
+            if (p1.getY() < p2.getY()) {
+                if (degree < 0) {
+                    degree = 180 + degree;
+                }
+            } else {
+                if (degree > 0) {
+                    degree = 180 + degree;
+                }
+
+            }
+        } else {
+            if (p1.getY() < p2.getY()) {
+
+            } else {
+                if (degree < 0) {
+                    degree = 360 + degree;
+                }
+            }
+        }
+        return degree;
+    }
+
+    /**
+     * 获取一新点坐标
+     *
+     * @param p1
+     * @param p2
+     * @return
+     */
+    public static Point getNewPByS(Point p1, Point p2) {
+        //虚拟点
+        float l = (float) lineSpace(p1, p2);
+        Point xuniP = new Point();
+        xuniP.setX(p1.getX() + l);
+        xuniP.setY(p1.getY());
+        //虚拟中点
+        float centerX = (xuniP.getX() + p1.getX()) / 2;
+        float centerY = (xuniP.getY() + p1.getY()) / 2;
+        Point centerP = new Point(centerX, centerY);
+        //三边边长 海伦定理
+        float a = (float) lineSpace(p1, centerP);
+        float b = a;
+        float c = l / 2;
+        float p = (a + b + c) / 2;
+        double s = Math.sqrt(p * (p - a) * (p - b) * (p - c));
+
+
+        Point newP = new Point();
+        return newP;
+    }
+
+    public static int getTextWidth(Paint paint, String str) {
+        int iRet = 0;
+        if (str != null && str.length() > 0) {
+            int len = str.length();
+            float[] widths = new float[len];
+            paint.getTextWidths(str, widths);
+            for (int j = 0; j < len; j++) {
+                iRet += (int) Math.ceil(widths[j]);
+            }
+        }
+        return iRet;
     }
 
 }

@@ -8,29 +8,28 @@
     tools:context="com.example.hasee.drawtest.weidget.Two.success.ThreeActivity">
 
     <LinearLayout
-        android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        >
 
         <Button
             android:id="@+id/completeBtn"
             android:layout_width="0dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="完成"
-            android:layout_height="wrap_content"/>
+            android:text="完成"/>
+
+        <Button
+            android:id="@+id/restoreBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="复原"/>
 
     </LinearLayout>
 
-    <!--<com.example.hasee.drawtest.weidget.Two.original.MagicPlanView-->
-        <!--android:id="@+id/magicPlan_View"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"/>-->
-    <!--<com.example.hasee.drawtest.weidget.Two.success.MagicPlanView2-->
-        <!--android:id="@+id/magicPlan_View"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"/>-->
     <com.example.hasee.drawtest.weidget.Two.success.MagicPlanDrawView
-
         android:id="@+id/magicPlan_View"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

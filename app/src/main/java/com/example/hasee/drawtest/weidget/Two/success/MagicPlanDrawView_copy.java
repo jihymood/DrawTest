@@ -19,8 +19,6 @@ import com.example.hasee.drawtest.model.Point;
 import com.example.hasee.drawtest.utils.DrawUtils;
 import com.example.hasee.drawtest.utils.Utils;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,14 +26,12 @@ import java.util.List;
  * Created by Administrator on 2017/7/24.
  */
 
-public class MagicPlanDrawView extends View {
+public class MagicPlanDrawView_copy extends View {
     private Context context;
     private List<Point> points = new ArrayList<>();
     private List<Point> movePoints = new ArrayList<>();
     private List<PoPoListModel> showPolygons = new ArrayList<>();
     private Paint mPaint = new Paint();
-    private Paint mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint mBZPaint = new Paint();
     private Paint pathPaint = new Paint();
     private Path pathDash = new Path();
     private Path path = new Path();
@@ -89,17 +85,17 @@ public class MagicPlanDrawView extends View {
     }
 
 
-    public MagicPlanDrawView(Context context) {
+    public MagicPlanDrawView_copy(Context context) {
         super(context);
         init(context);
     }
 
-    public MagicPlanDrawView(Context context, @Nullable AttributeSet attrs) {
+    public MagicPlanDrawView_copy(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }
 
-    public MagicPlanDrawView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public MagicPlanDrawView_copy(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context);
     }
@@ -121,22 +117,11 @@ public class MagicPlanDrawView extends View {
         pathPaint.setColor(Color.GRAY);
         pathPaint.setStrokeWidth(10);
         pathPaint.setStyle(Paint.Style.STROKE);
-        mTextPaint.setAntiAlias(true);
-        mTextPaint.setColor(Color.GRAY);
-        mTextPaint.setStrokeWidth(5);
-        mTextPaint.setTextSize(20);
-        mTextPaint.setTextAlign(Paint.Align.CENTER);
         circlePaint.setAntiAlias(true);
         circlePaint.setColor(Color.RED);
         circlePaint.setStrokeWidth(5f);
         circlePaint.setStyle(Paint.Style.STROKE);
-        mBZPaint.setAntiAlias(true);
-        mBZPaint.setColor(Color.BLACK);
-        mBZPaint.setStrokeWidth(5);
-        mBZPaint.setColor(Color.RED);
-        mBZPaint.setStyle(Paint.Style.STROKE);
     }
-
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -302,7 +287,6 @@ public class MagicPlanDrawView extends View {
                 Point p = points.get(i);
                 Point p1 = points.get(i + 1);
                 mCanvas.drawLine(p.getX(), p.getY(), p1.getX(), p1.getY(), mPaint);
-                drawBz(p, p1, canvas);
             }
             //虚线
             pathDash.reset();
@@ -314,41 +298,6 @@ public class MagicPlanDrawView extends View {
             circlePaint.setStrokeWidth(10 / curScale);
             mCanvas.drawCircle(cx, cy, 80 / curScale, circlePaint);
         }
-    }
-
-    private void drawBz(Point p, Point p1, Canvas canvas) {
-        double degree = Utils.getDegreeByK(p, p1);
-        double l = Utils.lineSpace(p, p1);
-        NumberFormat format = new DecimalFormat("0.00");
-        String length = format.format(l / 50);
-        Point newP = Utils.getNewPByDegree(p, p1, degree);
-        float nx = newP.getX();
-        float ny = newP.getY();
-        float centerX = (nx + p.getX()) / 2;
-        float centerY = (ny + p.getY()) / 2 - 40;
-        Point xnc = new Point(centerX, centerY);
-        Point c = Utils.getNewPByDegree(p, xnc, 360 - degree);
-        Point xnd1 = new Point(p.getX(), p.getY() - 40);
-        Point d1 = Utils.getNewPByDegree(p, xnd1, 360 - degree);
-        Point xnd2 = new Point(newP.getX(), newP.getY() - 40);
-        Point d2 = Utils.getNewPByDegree(p, xnd2, 360 - degree);
-        Point xnLeftT = new Point(xnc.getX() - 40, newP.getY() - 20);
-        Point leftT = Utils.getNewPByDegree(p, xnLeftT, 360 - degree);
-        Point xnRightB = new Point(xnc.getX() + 40, newP.getY() + 20);
-        Point rightB = Utils.getNewPByDegree(p, xnRightB, 360 - degree);
-        canvas.save();
-        canvas.rotate((float) degree, p.getX(), p.getY());
-        canvas.drawText(length, xnc.getX(), xnc.getY(), mTextPaint);
-        canvas.restore();
-        int textWith = Utils.getTextWidth(mTextPaint, length);
-        Point xnTextLeft = new Point(xnc.getX() - textWith / 2, xnc.getY());
-        Point textLeft = Utils.getNewPByDegree(p, xnTextLeft, 360 - degree);
-        Point xnTextRight = new Point(xnc.getX() + textWith / 2, xnc.getY());
-        Point textRight = Utils.getNewPByDegree(p, xnTextRight, 360 - degree);
-        canvas.drawLine(p.getX(), p.getY(), d1.getX(), d1.getY(), mBZPaint);
-        canvas.drawLine(p1.getX(), p1.getY(), d2.getX(), d2.getY(), mBZPaint);
-        canvas.drawLine(d1.getX(), d1.getY(), textLeft.getX(), textLeft.getY(), mBZPaint);
-        canvas.drawLine(d2.getX(), d2.getY(), textRight.getX(), textRight.getY(), mBZPaint);
     }
 
 
@@ -498,20 +447,4 @@ public class MagicPlanDrawView extends View {
         }
     }
 
-    public void recover() {
-        if (points.size() > 0) {
-            points.remove(points.size() - 1);
-            if (points.size() > 0) {
-                cx = points.get(points.size() - 1).getX();
-                cy = points.get(points.size() - 1).getY();
-                x = cx;
-                y = cy;
-            } else {
-                isFirst = true;
-            }
-        } else {
-            isFirst = true;
-        }
-        postInvalidate();
-    }
 }

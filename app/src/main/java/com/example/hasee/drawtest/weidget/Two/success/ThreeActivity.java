@@ -16,18 +16,20 @@ import java.util.List;
 
 public class ThreeActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private Button completeBtn;
+    private Button completeBtn, restoreBtn;
     private MagicPlanDrawView magicPlanView;
     private List<PoPoListModel> polygons;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_three);
+        setContentView(R.layout.activity_draw_line);
         completeBtn = (Button) findViewById(R.id.completeBtn);
+        restoreBtn = (Button) findViewById(R.id.restoreBtn);
         magicPlanView = (MagicPlanDrawView) findViewById(R.id.magicPlan_View);
 
         completeBtn.setOnClickListener(this);
+        restoreBtn.setOnClickListener(this);
 
 
         polygons = new ArrayList<>();
@@ -37,7 +39,6 @@ public class ThreeActivity extends AppCompatActivity implements View.OnClickList
         }
         float curScale = getIntent().getFloatExtra("scale", 1f);
         magicPlanView.setmScale(curScale);
-
 
     }
 
@@ -60,6 +61,9 @@ public class ThreeActivity extends AppCompatActivity implements View.OnClickList
                 } else {
                     Toast.makeText(ThreeActivity.this, "图形不符合要求,请重新绘制", Toast.LENGTH_SHORT).show();
                 }
+                break;
+            case R.id.restoreBtn:
+                magicPlanView.recover();
                 break;
             default:
                 break;

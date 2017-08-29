@@ -22,7 +22,44 @@ public class ExampleUnitTest {
         removeYuansu();
 
 
+        Point point = new Point(0, 0);
+        Point point1 = new Point(100, 0);
+        Point point2 = new Point(100, 100);
+        Point point3 = new Point(0, 100);
+        List<Point> list = new ArrayList<>();
+        list.add(point);
+        list.add(point1);
+        list.add(point2);
+        list.add(point3);
+        Point gravityPoint = getCenterOfGravityPoint(list);
+        System.out.print(gravityPoint.getX() + "/" + gravityPoint.getY());
+
+
     }
+
+    /**
+     * 获取不规则多边形重心点
+     * @param mPoints
+     * @return
+     */
+    public Point getCenterOfGravityPoint(List<Point> mPoints) {
+        float area = 0.0f;//多边形面积
+        float Gx = 0.0f, Gy = 0.0f;// 重心的x、y
+        for (int i = 1; i <= mPoints.size(); i++) {
+            float iLat = mPoints.get(i % mPoints.size()).getX();
+            float iLng = mPoints.get(i % mPoints.size()).getY();
+            float nextLat = mPoints.get(i - 1).getX();
+            float nextLng = mPoints.get(i - 1).getY();
+            float temp = (iLat * nextLng - iLng * nextLat) / 2.0f;
+            area += temp;
+            Gx += temp * (iLat + nextLat) / 3.0;
+            Gy += temp * (iLng + nextLng) / 3.0;
+        }
+        Gx = Gx / area;
+        Gy = Gy / area;
+        return new Point(Gx, Gy);
+    }
+
 
     public void paixu() {
         Point point = new Point(11, 12);

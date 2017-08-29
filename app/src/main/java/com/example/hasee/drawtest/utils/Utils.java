@@ -1,5 +1,7 @@
 package com.example.hasee.drawtest.utils;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -7,6 +9,7 @@ import android.graphics.Path;
 
 import com.example.hasee.drawtest.model.Point;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -572,6 +575,27 @@ public class Utils {
             }
         }
         return iRet;
+    }
+
+    /**
+     * 把Bitmap转换成byte[ ]
+     * @param bitmap
+     * @return
+     */
+    public static byte[] getBytes(Bitmap bitmap){
+        //实例化字节数组输出流
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, baos);//压缩位图
+        return baos.toByteArray();//创建分配字节数组
+    }
+
+    /**
+     * byte[ ]转换回来Bitmap
+     * @param data
+     * @return
+     */
+    public static Bitmap getBitmap(byte[] data){
+        return BitmapFactory.decodeByteArray(data, 0, data.length);//从字节数组解码位图
     }
 
 }

@@ -20,7 +20,15 @@ public class PoPoListModel implements Serializable {
     private List<Line> lines; //线的集合
     private List<Point> centerPoints;
     private boolean isMOveCanvas; //是否移动画布
+    private String text;
 
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
 
     public PoPoListModel(List<Point> list) {
         this.list = list;

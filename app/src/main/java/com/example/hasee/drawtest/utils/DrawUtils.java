@@ -212,7 +212,9 @@ public class DrawUtils {
         return space;
     }
 
-    // 计算两点之间的距离
+    /**
+     * 计算两点之间的距离
+     */
     public static double lineSpace(float x1, float y1, float x2, float y2) {
         double lineLength = 0;
         lineLength = Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2)
@@ -232,6 +234,21 @@ public class DrawUtils {
         float lineDis = (float) Math.sqrt(Math.pow(secondX - firstX, 2) + Math.pow(secondY - firstY, 2));
         return lineDis;
     }
+
+//    /**
+//     * 计算两点间距离
+//     */
+//    public static float calTwoPointDistance(List<Point> mPoints) {
+//        Point first=mPoints.get()
+//        float firstX = first.getX();
+//        float firstY = first.getY();
+//
+//        float secondX = second.getX();
+//        float secondY = second.getY();
+//        float lineDis = (float) Math.sqrt(Math.pow(secondX - firstX, 2) + Math.pow(secondY - firstY, 2));
+//        return lineDis;
+//    }
+
 
 
     /**
@@ -286,8 +303,8 @@ public class DrawUtils {
 
     /*获取两指之间的距离*/
     public static float getDistance(MotionEvent event) {
-        float x =event.getX(1) - event.getX(0);
-        float y =event.getY(1) - event.getY(0);
+        float x = event.getX(1) - event.getX(0);
+        float y = event.getY(1) - event.getY(0);
         float distance = (float) Math.sqrt(x * x + y * y);//两点间的距离
         return distance;
     }
@@ -337,6 +354,30 @@ public class DrawUtils {
             return new Point((int) (n + dx), (int) (m + dy));
         }
 
+    }
+
+    /**
+     * 获取不规则多边形重心点
+     *
+     * @param mPoints
+     * @return
+     */
+    public static Point getCenterOfGravityPoint(List<Point> mPoints) {
+        float area = 0.0f;//多边形面积
+        float Gx = 0.0f, Gy = 0.0f;// 重心的x、y
+        for (int i = 1; i <= mPoints.size(); i++) {
+            float iLat = mPoints.get(i % mPoints.size()).getX();
+            float iLng = mPoints.get(i % mPoints.size()).getY();
+            float nextLat = mPoints.get(i - 1).getX();
+            float nextLng = mPoints.get(i - 1).getY();
+            float temp = (iLat * nextLng - iLng * nextLat) / 2.0f;
+            area += temp;
+            Gx += temp * (iLat + nextLat) / 3.0;
+            Gy += temp * (iLng + nextLng) / 3.0;
+        }
+        Gx = Gx / area;
+        Gy = Gy / area;
+        return new Point(Gx, Gy);
     }
 
 }

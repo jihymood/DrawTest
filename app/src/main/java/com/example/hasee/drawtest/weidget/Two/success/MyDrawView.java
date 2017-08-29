@@ -2,17 +2,23 @@ package com.example.hasee.drawtest.weidget.Two.success;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Typeface;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.example.hasee.drawtest.R;
+import com.example.hasee.drawtest.model.ImageGroupModel;
 import com.example.hasee.drawtest.model.Line;
 import com.example.hasee.drawtest.model.MyComparator;
 import com.example.hasee.drawtest.model.PoPoListModel;
@@ -27,6 +33,10 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import static com.example.hasee.drawtest.utils.DrawUtils.getCenterOfGravityPoint;
 
 /**
  * Created by HASEE on 2017/7/27 16:04
@@ -34,10 +44,10 @@ import java.util.List;
  * 移动线成功View + 边刻度功能
  */
 
-public class MyDrawView extends View {
+public class MyDrawView extends BaseView {
 
     private Path path;
-    private Paint paint, textPaint;
+    private Paint paint, textPaint, writingPaint;
     private float startX, startY, lastX, lastY;
     private int downPosition;
     private List<List<Point>> twofoldList;  //所有图形的点的集合
@@ -78,6 +88,23 @@ public class MyDrawView extends View {
     private Bitmap mBufferBitmap;
     private Canvas mBufferCanvas;
 
+    /**
+     * 不规则图形的重心
+     */
+    private Point gravityPoint;
+    /**
+     * 路由器
+     */
+    private Bitmap deleteIcon;
+    private Paint mPaintForLineAndCircle;
+    private int moveTag = 0, transformTag = 0, deleteTag = 0;
+    private List<ImageGroup> mDecalImageGroupList = new ArrayList<>();
+    private ImageGroupModel imageGroupModel;
+
+    // 统计500ms内的点击次数
+    TouchEventCountThread mInTouchEventCount = new TouchEventCountThread();
+    // 根据TouchEventCountThread统计到的点击次数, perform单击还是双击事件
+    TouchEventHandler mTouchEventHandler = new TouchEventHandler();
 
 
     public IShowChangeLongViewListener getListener() {
@@ -134,6 +161,15 @@ public class MyDrawView extends View {
         textPaint.setTextSize(30);
         textPaint.setTypeface(Typeface.SERIF);
 
+        //添加文字画笔
+        writingPaint = new Paint();
+        writingPaint.setColor(Color.GRAY);
+        writingPaint.setStrokeWidth(15);
+        writingPaint.setStyle(Paint.Style.FILL);
+        writingPaint.setAntiAlias(true);
+        writingPaint.setTextSize(40);
+        writingPaint.setFakeBoldText(true);//true为粗体，false为非粗体
+
         singleList = new ArrayList<>();
         twofoldList = new ArrayList<>();
         distanceList = new ArrayList<>();
@@ -145,21 +181,17 @@ public class MyDrawView extends View {
         toSidebDis = DensityUtil.px2dip(context, 100);
         Log.e("MyDrawView", "adsorbDis:" + adsorbDis + "/toSidebDis:" + toSidebDis);
 
-    }
+        deleteIcon = BitmapFactory.decodeResource(getResources(), R.drawable.chahao);
+        mPaintForLineAndCircle = new Paint();
+        mPaintForLineAndCircle.setAntiAlias(true);
+        mPaintForLineAndCircle.setColor(Color.BLACK);
+        mPaintForLineAndCircle.setAlpha(170);
 
-
-    public void setAllList(List<List<Point>> list) {
-        this.twofoldList = list;
-    }
-
-    public List<List<Point>> getTwofoldList() {
-        return twofoldList;
+        imageGroupModel = ImageGroupModel.getInstance();
     }
 
     /**
      * 获取所有图形集合方法
-     *
-     * @return
      */
     public List<PoPoListModel> getAllModelList() {
         return pointModelsList;
@@ -168,6 +200,14 @@ public class MyDrawView extends View {
     public void setAllModelList(List<PoPoListModel> list) {
         this.pointModelsList = list;
     }
+
+//    public List<ImageGroup> getmDecalImageGroupList() {
+//        return mDecalImageGroupList;
+//    }
+//
+//    public void setmDecalImageGroupList(List<ImageGroup> mDecalImageGroupList) {
+//        this.mDecalImageGroupList = mDecalImageGroupList;
+//    }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -204,6 +244,13 @@ public class MyDrawView extends View {
                 canvas.drawPath(path, paint);
                 canvas.save();
 
+                //添加文字
+                if (poPoListModel.getText() != null) {
+                    gravityPoint = getCenterOfGravityPoint(poPoListModel.getList());
+                    canvas.drawText(poPoListModel.getText(), this.gravityPoint.getX()-50, this.gravityPoint.getY(),
+                            writingPaint);
+                }
+
                 lineList.clear();
                 int position = poPoListModel.getPosition();
                 boolean showLength = poPoListModel.isShowLength();
@@ -215,123 +262,174 @@ public class MyDrawView extends View {
             }
         }
 
+        mDecalImageGroupList = imageGroupModel.getImageGroupList();
+        for (ImageGroup imageGroup : mDecalImageGroupList) {
+            float[] points = getBitmapPoints(imageGroup);
+            float x1 = points[0];
+            float y1 = points[1];
+            float x2 = points[2];
+            float y2 = points[3];
+            float x3 = points[4];
+            float y3 = points[5];
+            float x4 = points[6];
+            float y4 = points[7];
+
+            canvas.drawLine(x1, y1, x2, y2, mPaintForLineAndCircle);
+            canvas.drawLine(x2, y2, x4, y4, mPaintForLineAndCircle);
+            canvas.drawLine(x4, y4, x3, y3, mPaintForLineAndCircle);
+            canvas.drawLine(x3, y3, x1, y1, mPaintForLineAndCircle);
+            canvas.drawCircle(x2, y2, 20, mPaintForLineAndCircle);
+            canvas.drawBitmap(deleteIcon, x2 - deleteIcon.getWidth() / 2, y2 - deleteIcon.getHeight() / 2,
+                    mPaintForBitmap); //右上角叉叉
+
+            canvas.drawBitmap(imageGroup.bitmap, imageGroup.matrix, mPaintForBitmap); //贴纸
+        }
 
     }
 
     public Bitmap initBitmap() {
-        mBufferBitmap = Bitmap.createBitmap(getWidth()/3, getHeight()/3, Bitmap.Config.ARGB_8888);
+        mBufferBitmap = Bitmap.createBitmap(getWidth() / 3, getHeight() / 3, Bitmap.Config.ARGB_8888);
         mBufferCanvas = new Canvas(mBufferBitmap);
         draw(mBufferCanvas);
         return mBufferBitmap;
     }
 
-
-    public Bitmap buildBitmap() {
-        Bitmap bm = getDrawingCache();
-        Bitmap result = Bitmap.createBitmap(bm);
-        destroyDrawingCache();
-        return result;
-    }
-
-
+    boolean isChoosed;
+    boolean isMoveSticker;
     @Override
     public boolean onTouchEvent(MotionEvent e) {
         switch (e.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 startX = (e.getX() - midX) / curScale + midX;
                 startY = (e.getY() - midY) / curScale + midY;
-                for (PoPoListModel poListModel : pointModelsList) {
-                    singleList = poListModel.getList();  //全局变量
-//                    List<Point> singleList = poListModel.getList();  //局部变量
-                    if (singleList != null && singleList.size() > 0) {
-                        downPosition = ensurePoint(singleList, startX, startY);
-                        poListModel.setPosition(downPosition);
-                        if (downPosition == -2) {
-                            poListModel.setShowLength(true);
-                            poListModel.setIsMOveCanvas(false);
-                        } else if (downPosition == -3) {
-                            poListModel.setIsMOveCanvas(true);
-                        } else {
-                            poListModel.setIsMOveCanvas(false);
-                        }
+
+                moveTag = decalCheck(startX, startY);
+                deleteTag = deleteCheck(startX, startY);
+                if (moveTag != -1 && deleteTag == -1) {
+                    downMatrix.set(mDecalImageGroupList.get(moveTag).matrix);
+                    mode = DRAG;
+                    isMoveSticker = true;
+                }else{
+                    isMoveSticker = false;
+                }
+
+                if (!isMoveSticker) {
+                    for (PoPoListModel poListModel : pointModelsList) {
+                        singleList = poListModel.getList();  //全局变量
+                        if (singleList != null && singleList.size() > 0) {
+                            downPosition = ensurePoint(singleList, startX, startY);
+                            poListModel.setPosition(downPosition);
+                            if (downPosition == -2) {  //在多边形内
+                                //计算点击该多边形的次数, TODO: 2017/8/23
+                                if (0 == mInTouchEventCount.touchCount) { // 第一次按下时,开始统计
+                                    isChoosed = true;
+                                    mInTouchEventCount.poListModel = poListModel;
+                                    postDelayed(mInTouchEventCount, 500);
+                                }
+
+                                exitByDoubleClick(poListModel);
+
+                                poListModel.setShowLength(true);
+                                poListModel.setIsMOveCanvas(false);
+                            } else if (downPosition == -3) {
+                                poListModel.setIsMOveCanvas(true);
+                            } else {
+                                poListModel.setIsMOveCanvas(false);
+                            }
 
 
-                        if (downPosition == -2) {
-                            listener.cancelView();
-                            isDrawDuan = false;
-                        } else if (downPosition == -3) {
-                            listener.cancelView();
-                            isDrawDuan = false;
-                        } else if (downPosition == -1) {
-                            duan1 = singleList.get(singleList.size() - 1);
-                            duan2 = singleList.get(0);
-                            p1 = singleList.get(singleList.size() - 2);
-                            p2 = singleList.get(1);
-                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
-                                    duan2.getY()) / 2) <= 90
-                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
-                                    () + duan2.getY()) / 2) >= 50) {
-                                setView();
-                                isDrawDuan = true;
-                                return true;
-                            } else {
+                            if (downPosition == -2) {
                                 listener.cancelView();
                                 isDrawDuan = false;
-                            }
-                        } else if (downPosition == 0) {
-                            duan1 = singleList.get(0);
-                            duan2 = singleList.get(1);
-                            p1 = singleList.get(singleList.size() - 1);
-                            p2 = singleList.get(2);
-                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
-                                    duan2.getY()) / 2) <= 90
-                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
-                                    () + duan2.getY()) / 2) >= 50) {
-                                setView();
-                                isDrawDuan = true;
-                                return true;
-                            } else {
+                            } else if (downPosition == -3) {
                                 listener.cancelView();
                                 isDrawDuan = false;
-                            }
-                        } else if (downPosition == singleList.size() - 2) {
-                            duan1 = singleList.get(downPosition);
-                            duan2 = singleList.get(downPosition + 1);
-                            p1 = singleList.get(downPosition - 1);
-                            p2 = singleList.get(0);
-                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
-                                    duan2.getY()) / 2) <= 90
-                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
-                                    () + duan2.getY()) / 2) >= 50) {
-                                setView();
-                                isDrawDuan = true;
-                                return true;
+                            } else if (downPosition == -1) {
+                                duan1 = singleList.get(singleList.size() - 1);
+                                duan2 = singleList.get(0);
+                                p1 = singleList.get(singleList.size() - 2);
+                                p2 = singleList.get(1);
+                                if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                        duan2.getY()) / 2) <= 90
+                                        && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2,
+                                        (duan1.getY
+                                                () + duan2.getY()) / 2) >= 50) {
+                                    setView();
+                                    isDrawDuan = true;
+                                    return true;
+                                } else {
+                                    listener.cancelView();
+                                    isDrawDuan = false;
+                                }
+                            } else if (downPosition == 0) {
+                                duan1 = singleList.get(0);
+                                duan2 = singleList.get(1);
+                                p1 = singleList.get(singleList.size() - 1);
+                                p2 = singleList.get(2);
+                                if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                        duan2.getY()) / 2) <= 90
+                                        && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2,
+                                        (duan1.getY
+                                                () + duan2.getY()) / 2) >= 50) {
+                                    setView();
+                                    isDrawDuan = true;
+                                    return true;
+                                } else {
+                                    listener.cancelView();
+                                    isDrawDuan = false;
+                                }
+                            } else if (downPosition == singleList.size() - 2) {
+                                duan1 = singleList.get(downPosition);
+                                duan2 = singleList.get(downPosition + 1);
+                                p1 = singleList.get(downPosition - 1);
+                                p2 = singleList.get(0);
+                                if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                        duan2.getY()) / 2) <= 90
+                                        && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2,
+                                        (duan1.getY
+                                                () + duan2.getY()) / 2) >= 50) {
+                                    setView();
+                                    isDrawDuan = true;
+                                    return true;
+                                } else {
+                                    listener.cancelView();
+                                    isDrawDuan = false;
+                                }
                             } else {
-                                listener.cancelView();
-                                isDrawDuan = false;
-                            }
-                        } else {
-                            duan1 = singleList.get(downPosition);
-                            duan2 = singleList.get(downPosition + 1);
-                            p1 = singleList.get(downPosition - 1);
-                            p2 = singleList.get(downPosition + 2);
-                            if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
-                                    duan2.getY()) / 2) <= 90
-                                    && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY
-                                    () + duan2.getY()) / 2) >= 50) {
-                                setView();
-                                isDrawDuan = true;
-                                return true;
-                            } else {
-                                listener.cancelView();
-                                isDrawDuan = false;
+                                duan1 = singleList.get(downPosition);
+                                duan2 = singleList.get(downPosition + 1);
+                                p1 = singleList.get(downPosition - 1);
+                                p2 = singleList.get(downPosition + 2);
+                                if (Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2, (duan1.getY() +
+                                        duan2.getY()) / 2) <= 90
+                                        && Utils.lineSpace(startX, startY, (duan1.getX() + duan2.getX()) / 2,
+                                        (duan1.getY
+                                                () + duan2.getY()) / 2) >= 50) {
+                                    setView();
+                                    isDrawDuan = true;
+                                    return true;
+                                } else {
+                                    listener.cancelView();
+                                    isDrawDuan = false;
+                                }
                             }
                         }
                     }
+
                 }
                 mode = 1;
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
+                moveTag = decalCheck(e.getX(0), e.getY(0));
+                transformTag = decalCheck(e.getX(1), e.getY(1));
+                if (moveTag != -1 && transformTag == moveTag && deleteTag == -1) {
+                    downMatrix.set(mDecalImageGroupList.get(moveTag).matrix);
+                    mode = ZOOM;
+                }
+                oldDistance = getDistance(e);
+                oldRotation = getRotation(e);
+                midPoint = midPoint(e);
+
                 preDistance = DrawUtils.getDistance(e);
                 //当两指间距大于10时，计算两指中心点
                 if (preDistance > 10f) {
@@ -339,36 +437,117 @@ public class MyDrawView extends View {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (mode == 2) {
-                    distance = DrawUtils.getDistance(e);
-                    if (distance > 10f) {
-                        curScale = mScale * (distance / preDistance);
+                if (moveTag != -1 && deleteTag == -1) {
+                    if (mode == ZOOM) {
+                        moveMatrix.set(downMatrix);
+                        float newRotation = getRotation(e) - oldRotation;
+                        float newDistance = getDistance(e);
+                        float scale = newDistance / oldDistance;
+                        moveMatrix.postScale(scale, scale, midPoint.x, midPoint.y);// 縮放
+                        moveMatrix.postRotate(newRotation, midPoint.x, midPoint.y);// 旋轉
+                        if (moveTag != -1) {
+                            mDecalImageGroupList.get(moveTag).matrix.set(moveMatrix);
+                        }
+                        invalidate();
+                    } else if (mode == DRAG) {
+                        moveMatrix.set(downMatrix);
+                        moveMatrix.postTranslate(e.getX() - startX, e.getY() - startY);// 平移
+                        if (moveTag != -1) {
+                            mDecalImageGroupList.get(moveTag).matrix.set(moveMatrix);
+                        }
                     }
-                } else if (mode == 1) {
-                    lastX = (e.getX() - midX) / curScale + midX;
-                    lastY = (e.getY() - midY) / curScale + midY;
-                    moveLine(pointModelsList,new Point(lastX, lastY), lastX - startX, lastY - startY);
-                    startX = lastX;
-                    startY = lastY;
                 }
-//                if (mBufferBitmap == null) {
-//                    initBuffer();
-//                }
-                break;
-            case MotionEvent.ACTION_POINTER_UP:
-                mScale = curScale;
-                mode = 0;
+
+                if (!isMoveSticker) {
+                    if (mode == 2) {
+                        distance = DrawUtils.getDistance(e);
+                        if (distance > 10f) {
+                            curScale = mScale * (distance / preDistance);
+                        }
+                    } else if (mode == 1) {
+                        lastX = (e.getX() - midX) / curScale + midX;
+                        lastY = (e.getY() - midY) / curScale + midY;
+                        moveLine(pointModelsList, new Point(lastX, lastY), lastX - startX, lastY - startY);
+                        startX = lastX;
+                        startY = lastY;
+                    }
+                }
                 break;
             case MotionEvent.ACTION_UP:
+
+                if (deleteTag != -1) {
+                    mDecalImageGroupList.remove(deleteTag).release();
+                }
+                mode = NONE;
+
+                // TODO: 2017/8/23
+                if (isChoosed) {  //在多边形内
+                    // 一次点击事件要有按下和抬起, 有抬起必有按下, 所以只需要在ACTION_UP中处理
+                    mInTouchEventCount.touchCount++;
+                    isChoosed = false;
+                }
                 mode = 0;
-                // TODO: 2017/7/26
                 adsorbResult(pointModelsList);
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                mode = NONE;
+
+                mScale = curScale;
+                mode = 0;
                 break;
 
         }
         // 更新绘制
         invalidate();
         return true;
+    }
+
+
+    private void matrixFix() {
+        float[] points = getBitmapPoints(mCropImageGroup.bitmap, moveMatrix);
+        float x1 = points[0];
+        float y1 = points[1];
+        float x2 = points[2];
+        float y3 = points[5];
+
+        if (mCropImageGroup.bitmap.getWidth() <= mCropImageGroup.bitmap.getHeight()) {
+            if ((x2 - x1) < getWidth()) {
+                moveMatrix.set(matrixBig);
+            }
+
+            if ((y3 - y1) < getHeight()) {
+                moveMatrix.set(matrixSmall);
+            }
+        } else if (mCropImageGroup.bitmap.getWidth() > mCropImageGroup.bitmap.getHeight()) {
+            if ((y3 - y1) < getHeight()) {
+                moveMatrix.set(matrixBig);
+            }
+
+            if ((x2 - x1) < getWidth()) {
+                moveMatrix.set(matrixSmall);
+            }
+        }
+
+        if (!moveMatrix.equals(matrixBig) && !moveMatrix.equals(matrixSmall)) {
+            if (x1 >= targetRect.left) {
+                moveMatrix.postTranslate(targetRect.left - x1, 0);
+            }
+
+            if (x2 <= targetRect.left + getWidth()) {
+                moveMatrix.postTranslate(getWidth() - x2, 0);
+            }
+
+            if (y1 >= targetRect.top) {
+                moveMatrix.postTranslate(0, targetRect.top - y1);
+            }
+
+            if (y3 <= targetRect.top + getHeight()) {
+                moveMatrix.postTranslate(0, targetRect.top + getHeight() - y3);
+            }
+        }
+
+        mCropImageGroup.matrix.set(moveMatrix);
+        invalidate();
     }
 
     private void setView() {
@@ -424,12 +603,12 @@ public class MyDrawView extends View {
 //            return -3;//表示点击点在多边形外,不执行任何操作
 //        }
 
-        if (minL <= toSidebDis/2) {
+        if (minL <= toSidebDis / 2) {
             return position;//根据position获取要移动线的 端点
         } else if (Utils.PtInRegion(new Point(startX, startY), pp) == 1 && minL > toSidebDis) {
             return -2;//表示点击点在多边形内,执行移动view
-        } else if (Utils.PtInRegion(new Point(startX, startY), pp) == -1 && minL > toSidebDis/2 && minL <
-                toSidebDis*2) {
+        } else if (Utils.PtInRegion(new Point(startX, startY), pp) == -1 && minL > toSidebDis / 2 && minL <
+                toSidebDis * 2) {
             return position;//根据position获取要移动线的 端点
         } else {
             return -3;//表示点击点在多边形外,不执行任何操作
@@ -483,7 +662,7 @@ public class MyDrawView extends View {
                         singlePointList.set(singlePointList.size() - 1, pointList.get(1));
 
                     } else if (position == -2) {  //选中整体图形{
-                        moveView(singlePointList, dx, dy);
+                        moveView(poPoListModel, singlePointList, dx, dy);
                     } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
 //                    return;
                         moveCanvas(singlePointList, dx, dy);
@@ -529,7 +708,7 @@ public class MyDrawView extends View {
                         singlePointList.set(singlePointList.size() - 1, pointList.get(1));
 
                     } else if (position == -2) {  //选中整体图形
-                        moveView(singlePointList, dx, dy);
+                        moveView(poPoListModel, singlePointList, dx, dy);
                         return;
                     } else if (position == -3) {  //表示点击点在多边形外,不执行任何操作
 //                    return;
@@ -573,8 +752,8 @@ public class MyDrawView extends View {
                         singlePointList.set(position + 1, pointList.get(1));
                     }
                 }
-
             }
+//            addText(poPoListModel);
         }
     }
 
@@ -593,13 +772,9 @@ public class MyDrawView extends View {
                 singleList.get(0).setY(pointList.get(0).getY());
                 singleList.get(singleList.size() - 1).setX(pointList.get(1).getX());
                 singleList.get(singleList.size() - 1).setY(pointList.get(1).getY());
-//                singleList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-//                singleList.set(singleList.size() - 1, pointList.get(1));
-
             } else if (downPosition == -2) {  //选中整体图形{
-                moveView(singleList, dx, dy);
+//                moveView(singleList, dx, dy);
             } else if (downPosition == -3) {  //表示点击点在多边形外,不执行任何操作
-//                moveCanvas((int) dx, (int) dy);
                 moveCanvas(singleList, dx, dy);
             } else if (downPosition == 0) {
                 duan1 = singleList.get(downPosition);
@@ -613,8 +788,6 @@ public class MyDrawView extends View {
                 singleList.get(downPosition).setY(pointList.get(0).getY());
                 singleList.get(downPosition + 1).setX(pointList.get(1).getX());
                 singleList.get(downPosition + 1).setY(pointList.get(1).getY());
-//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-//                singleList.set(downPosition + 1, pointList.get(1));
             } else if (downPosition == 1) {
                 duan1 = singleList.get(downPosition);
                 duan2 = singleList.get(downPosition + 1);
@@ -625,10 +798,8 @@ public class MyDrawView extends View {
                 List<Point> pointList = getPoint(newList, movePoint);
                 singleList.get(downPosition).setX(pointList.get(0).getX());
                 singleList.get(downPosition).setY(pointList.get(0).getY());
-                singleList.get(downPosition + 1).setX(pointList.get(1).getX());
+                singleList.get(downPosition + 1).setX(pointList.get(1).getX());//替换掉原来元素中移动边的两个坐标点
                 singleList.get(downPosition + 1).setY(pointList.get(1).getY());
-//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-//                singleList.set(downPosition + 1, pointList.get(1));
             }
         } else if (singleList.size() > 3) {   //表示多边形
             //通过ensurePoint获得downPosition,判断downPosition
@@ -647,14 +818,10 @@ public class MyDrawView extends View {
                 singleList.get(0).setY(pointList.get(0).getY());
                 singleList.get(singleList.size() - 1).setX(pointList.get(1).getX());
                 singleList.get(singleList.size() - 1).setY(pointList.get(1).getY());
-//                singleList.set(0, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-//                singleList.set(singleList.size() - 1, pointList.get(1));
 
             } else if (downPosition == -2) {  //选中整体图形
-//                moveView((int) dx, (int) dy);
-                moveView(singleList, dx, dy);
+//                moveView(singleList, dx, dy);
             } else if (downPosition == -3) {  //表示点击点在多边形外,不执行任何操作
-//                moveCanvas((int) dx, (int) dy);
                 moveCanvas(singleList, dx, dy);
             } else if (downPosition == 0) {  //index=-1旁边的直线
                 duan1 = singleList.get(downPosition);
@@ -669,11 +836,7 @@ public class MyDrawView extends View {
                 singleList.get(downPosition).setY(pointList.get(0).getY());
                 singleList.get(downPosition + 1).setX(pointList.get(1).getX());
                 singleList.get(downPosition + 1).setY(pointList.get(1).getY());
-//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-//                singleList.set(downPosition + 1, pointList.get(1));
-
             } else if (downPosition == singleList.size() - 2) { //index=-1旁边的直线
-
                 duan1 = singleList.get(downPosition);
                 duan2 = singleList.get(downPosition + 1);
                 newList.add(duan1);
@@ -686,9 +849,6 @@ public class MyDrawView extends View {
                 singleList.get(downPosition).setY(pointList.get(0).getY());
                 singleList.get(downPosition + 1).setX(pointList.get(1).getX());
                 singleList.get(downPosition + 1).setY(pointList.get(1).getY());
-//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-//                singleList.set(downPosition + 1, pointList.get(1));
-
             } else {
                 duan1 = singleList.get(downPosition);
                 duan2 = singleList.get(downPosition + 1);
@@ -701,14 +861,10 @@ public class MyDrawView extends View {
                 singleList.get(downPosition).setY(pointList.get(0).getY());
                 singleList.get(downPosition + 1).setX(pointList.get(1).getX());
                 singleList.get(downPosition + 1).setY(pointList.get(1).getY());
-//                singleList.set(downPosition, pointList.get(0));  //替换掉原来元素中移动边的两个坐标点
-//                singleList.set(downPosition + 1, pointList.get(1));
             }
 
         }
     }
-
-
 
 
     /**
@@ -717,12 +873,12 @@ public class MyDrawView extends View {
      * @param dx
      * @param dy
      */
-    public void moveView(List<Point> pointList, float dx, float dy) {
-
+    public void moveView(PoPoListModel poPoListModel, List<Point> pointList, float dx, float dy) {
         for (Point point : pointList) {
             point.setX(point.getX() + dx);
             point.setY(point.getY() + dy);
         }
+//        addText(poPoListModel);
     }
 
     /**
@@ -782,6 +938,7 @@ public class MyDrawView extends View {
                         invalidate();
                     }
                 }
+//                addText(poModel);
             }
         }
     }
@@ -802,7 +959,6 @@ public class MyDrawView extends View {
     }
 
     public void aOldDraw(List<Point> startPointList, Path testPath) {
-        // TODO: 2017/7/26
         testPath.moveTo(startPointList.get(0).getX(), startPointList.get(0).getY());
         for (int i = 1; i < startPointList.size(); i++) {
             Point point = startPointList.get(i);
@@ -829,7 +985,6 @@ public class MyDrawView extends View {
 
         Log.e("MoveLineView", "moveLineK:" + moveLineK + "/" + "crossLineK:" + crossLineK + "/" +
                 "crossLineK1:" + crossLineK1);
-
         if (Float.isInfinite(moveLineK) || Float.isNaN(moveLineK)) {  //竖线，水平方向移动  isNaN无穷大  isInfinite无意义的(分母为0)
             if (crossLineK == 0) {  //一条相交线都是水平方向
                 float crosspointX = movePoint.getX();
@@ -858,14 +1013,9 @@ public class MyDrawView extends View {
             }
         } else if (moveLineK == 0) {  //选中的线是横线，垂直方向移动
             if (Float.isInfinite(crossLineK1) || Float.isNaN(crossLineK1)) {
-//                crossLineK1 = 0;
-//                float crosspointX1 = DrawUtils.calCrosspointX(moveLineK, crossLineK1, movePoint, list.get(3));
-//                float crosspointY1 = DrawUtils.calBeelineEquation(moveLineK, crosspointX1, movePoint);
-//                moveinwardPoint.add(new Point(crosspointX1, crosspointY1));
                 float dy = lastY - startY;
                 float crosspointX1 = list.get(0).getX();
                 float crosspointY1 = list.get(0).getY() + dy;
-//                float crosspointY1 = DrawUtils.calBeelineEquation(moveLineK, crosspointX1, movePoint);
                 moveinwardPoint.add(new Point(crosspointX1, crosspointY1));
                 Log.e("MoveLineView", "crosspointX1:" + crosspointX1 + "/" + "crosspointY1:" + crosspointY1);
             } else {
@@ -879,7 +1029,6 @@ public class MyDrawView extends View {
                 float dy = lastY - startY;
                 float crosspointX = list.get(1).getX();
                 float crosspointY = list.get(1).getY() + dy;
-//                float crosspointY = DrawUtils.calBeelineEquation(moveLineK, crosspointX, movePoint);
                 moveinwardPoint.add(new Point(crosspointX, crosspointY));
                 Log.e("MoveLineView", "crosspointX:" + crosspointX + "/" + "crosspointY:" + crosspointY);
             } else {
@@ -891,13 +1040,8 @@ public class MyDrawView extends View {
 
         } else {  //选中的边既不垂直也不水平
             if (Float.isInfinite(crossLineK1) || Float.isNaN(crossLineK1)) {
-//                crossLineK1 = 0;
-//                float crosspointX1 = DrawUtils.calCrosspointX(moveLineK, crossLineK1, movePoint, list.get(3));
-//                float crosspointY1 = DrawUtils.calBeelineEquation(moveLineK, crosspointX1, movePoint);
-//                moveinwardPoint.add(new Point(crosspointX1, crosspointY1));
                 float dy = lastY - startY;
                 float crosspointX1 = list.get(0).getX();
-//                float crosspointY1 = list.get(0).getY() + dy;
                 float crosspointY1 = DrawUtils.calBeelineEquation(moveLineK, crosspointX1, movePoint);
                 moveinwardPoint.add(new Point(crosspointX1, crosspointY1));
                 Log.e("MoveLineView", "crosspointX1:" + crosspointX1 + "/" + "crosspointY1:" + crosspointY1);
@@ -911,7 +1055,6 @@ public class MyDrawView extends View {
 
                 float dy = lastY - startY;
                 float crosspointX = list.get(1).getX();
-//                float crosspointY = list.get(1).getY() + dy;
                 float crosspointY = DrawUtils.calBeelineEquation(moveLineK, crosspointX, movePoint);
                 moveinwardPoint.add(new Point(crosspointX, crosspointY));
                 Log.e("MoveLineView", "crosspointX:" + crosspointX + "/" + "crosspointY:" + crosspointY);
@@ -1030,14 +1173,9 @@ public class MyDrawView extends View {
                     drawReferLine(i, degree, length, p1, p2, textPaint, canvas);
                 }
             }
-//        drawReferLine(lines.size(),degree,length,p1,p2,textPaint,canvas);
         }
-
-        Log.e("MyDrawView", "canvas.getSaveCount():" + canvas.getSaveCount());
         canvas.restoreToCount(1);
         canvas.save();
-        Log.e("MyDrawView", "canvas.getSaveCount()1:" + canvas.getSaveCount());
-//        canvas.drawLine(0, 0, 100, 100, paint);
     }
 
     /*一个点到坐标轴原点的距离*/
@@ -1137,285 +1275,254 @@ public class MyDrawView extends View {
         double ll = Utils.lineSpace(duan1.getX(), duan1.getY(), duan2.getX(), duan2.getY());
         double l = (longNum * 50 - ll) / 2;
         float k = Utils.calSlope(duan1, duan2);
-//        if (!duan1.isLock() && !duan2.isLock() && !p1.isLock() && !p2.isLock()) {
-            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
-                if (duan1.getY() < duan2.getY()) {
-                    moveP1.setX(duan1.getX());
-                    moveP1.setY((float) (duan1.getY() - l));
-                    moveP2.setX(duan2.getX());
-                    moveP2.setY((float) (duan2.getY() + l));
-                } else if (duan1.getY() > duan2.getY()) {
-                    moveP1.setX(duan1.getX());
-                    moveP1.setY((float) (duan1.getY() + l));
-                    moveP2.setX(duan2.getX());
-                    moveP2.setY((float) (duan2.getY() - l));
-                }
-            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
-                if (duan1.getX() < duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() - l));
-                    moveP1.setY(duan1.getY());
-                    moveP2.setX((float) (duan2.getX() + l));
-                    moveP2.setY(duan2.getY());
-                } else if (duan1.getX() > duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() + l));
-                    moveP1.setY(duan1.getY());
-                    moveP2.setX((float) (duan2.getX() - l));
-                    moveP2.setY(duan2.getY());
-                }
-            } else {
-                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, l);
-                double dx = dxAdy[0];
-                double dy = dxAdy[1];
-                if (duan1.getX() < duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() - dx));
-                    moveP1.setY((float) (duan1.getY() - dy));
-                    moveP2.setX((float) (duan2.getX() + dx));
-                    moveP2.setY((float) (duan2.getY() + dy));
-                } else if (duan1.getX() > duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() + dx));
-                    moveP1.setY((float) (duan1.getY() + dy));
-                    moveP2.setX((float) (duan2.getX() - dx));
-                    moveP2.setY((float) (duan2.getY() - dy));
-                }
+        if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
+            if (duan1.getY() < duan2.getY()) {
+                moveP1.setX(duan1.getX());
+                moveP1.setY((float) (duan1.getY() - l));
+                moveP2.setX(duan2.getX());
+                moveP2.setY((float) (duan2.getY() + l));
+            } else if (duan1.getY() > duan2.getY()) {
+                moveP1.setX(duan1.getX());
+                moveP1.setY((float) (duan1.getY() + l));
+                moveP2.setX(duan2.getX());
+                moveP2.setY((float) (duan2.getY() - l));
             }
-            int position;
-            if (downPosition == -1) {
-                position = singleList.size() - 2;
-            } else {
-                position = downPosition - 1;
+        } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
+            if (duan1.getX() < duan2.getX()) {
+                moveP1.setX((float) (duan1.getX() - l));
+                moveP1.setY(duan1.getY());
+                moveP2.setX((float) (duan2.getX() + l));
+                moveP2.setY(duan2.getY());
+            } else if (duan1.getX() > duan2.getX()) {
+                moveP1.setX((float) (duan1.getX() + l));
+                moveP1.setY(duan1.getY());
+                moveP2.setX((float) (duan2.getX() - l));
+                moveP2.setY(duan2.getY());
             }
-            moveLine(p1, duan1, moveP1, position, 0, 0);
-            duan1.setX(moveP1.getX());
-            duan1.setY(moveP1.getY());
-            if (position == -1) {
-                Point p = singleList.get(singleList.size() - 1);
-                p1.setX(p.getX());
-                p1.setY(p.getY());
-            } else {
-                Point p = singleList.get(position);
-                p1.setX(p.getX());
-                p1.setY(p.getY());
+        } else {
+            double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, l);
+            double dx = dxAdy[0];
+            double dy = dxAdy[1];
+            if (duan1.getX() < duan2.getX()) {
+                moveP1.setX((float) (duan1.getX() - dx));
+                moveP1.setY((float) (duan1.getY() - dy));
+                moveP2.setX((float) (duan2.getX() + dx));
+                moveP2.setY((float) (duan2.getY() + dy));
+            } else if (duan1.getX() > duan2.getX()) {
+                moveP1.setX((float) (duan1.getX() + dx));
+                moveP1.setY((float) (duan1.getY() + dy));
+                moveP2.setX((float) (duan2.getX() - dx));
+                moveP2.setY((float) (duan2.getY() - dy));
             }
+        }
+        int position;
+        if (downPosition == -1) {
+            position = singleList.size() - 2;
+        } else {
+            position = downPosition - 1;
+        }
+        moveLine(p1, duan1, moveP1, position, 0, 0);
+        duan1.setX(moveP1.getX());
+        duan1.setY(moveP1.getY());
+        if (position == -1) {
+            Point p = singleList.get(singleList.size() - 1);
+            p1.setX(p.getX());
+            p1.setY(p.getY());
+        } else {
+            Point p = singleList.get(position);
+            p1.setX(p.getX());
+            p1.setY(p.getY());
+        }
 
-            if (downPosition == singleList.size() - 2) {
-                position = -1;
-            } else {
-                position = downPosition + 1;
-            }
-            moveLine(duan2, p2, moveP2, position, 0, 0);
-            duan2.setX(moveP2.getX());
-            duan2.setY(moveP2.getY());
-            if (position == -1) {
-                Point p = singleList.get(0);
-                p2.setX(p.getX());
-                p2.setY(p.getY());
-            } else {
-                Point p = singleList.get(position + 1);
-                p2.setX(p.getX());
-                p2.setY(p.getY());
-            }
-            duan1.setLock(true);
-            duan2.setLock(true);
-        /*} else if (duan1.isLock() && !duan2.isLock() && !p2.isLock()) {
-            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
-                if (duan1.getY() < duan2.getY()) {
-                    moveP2.setX(duan2.getX());
-                    moveP2.setY((float) (duan2.getY() + 2 * l));
-                } else if (duan1.getY() > duan2.getY()) {
-                    moveP2.setX(duan2.getX());
-                    moveP2.setY((float) (duan2.getY() - 2 * l));
-                }
-            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
-                if (duan1.getX() < duan2.getX()) {
-                    moveP2.setX((float) (duan2.getX() + 2 * l));
-                    moveP2.setY(duan2.getY());
-                } else if (duan1.getX() > duan2.getX()) {
-                    moveP2.setX((float) (duan2.getX() - 2 * l));
-                    moveP2.setY(duan2.getY());
-                }
-            } else {
-                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
-                double dx = dxAdy[0];
-                double dy = dxAdy[1];
-                if (duan1.getX() < duan2.getX()) {
-                    moveP2.setX((float) (duan2.getX() + dx));
-                    moveP2.setY((float) (duan2.getY() + dy));
-                } else if (duan1.getX() > duan2.getX()) {
-                    moveP2.setX((float) (duan2.getX() - dx));
-                    moveP2.setY((float) (duan2.getY() - dy));
-                }
-            }
-            int position;
-            if (downPosition == singleList.size() - 2) {
-                position = -1;
-            } else {
-                position = downPosition + 1;
-            }
-            moveLine(duan2, p2, moveP2, position, 0, 0);
-            duan2.setX(moveP2.getX());
-            duan2.setY(moveP2.getY());
-            if (position == -1) {
-                Point p = singleList.get(0);
-                p2.setX(p.getX());
-                p2.setY(p.getY());
-            } else {
-                Point p = singleList.get(position + 1);
-                p2.setX(p.getX());
-                p2.setY(p.getY());
-            }
-            duan2.setLock(true);
-        } else if (!duan1.isLock() && duan2.isLock() && !p1.isLock()) {
-            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
-                if (duan1.getY() < duan2.getY()) {
-                    moveP1.setX(duan1.getX());
-                    moveP1.setY((float) (duan1.getY() - 2 * l));
-                } else if (duan1.getY() > duan2.getY()) {
-                    moveP1.setX(duan1.getX());
-                    moveP1.setY((float) (duan1.getY() + 2 * l));
-                }
-            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
-                if (duan1.getX() < duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() - 2 * l));
-                    moveP1.setY(duan1.getY());
-                } else if (duan1.getX() > duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() + 2 * l));
-                    moveP1.setY(duan1.getY());
-                }
-            } else {
-                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
-                double dx = dxAdy[0];
-                double dy = dxAdy[1];
-                if (duan1.getX() < duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() - dx));
-                    moveP1.setY((float) (duan1.getY() - dy));
-                } else if (duan1.getX() > duan2.getX()) {
-                    moveP1.setX((float) (duan1.getX() + dx));
-                    moveP1.setY((float) (duan1.getY() + dy));
-                }
-            }
-            int position;
-            if (downPosition == -1) {
-                position = singleList.size() - 2;
-            } else {
-                position = downPosition - 1;
-            }
-            moveLine(p1, duan1, moveP1, position, 0, 0);
-            duan1.setX(moveP1.getX());
-            duan1.setY(moveP1.getY());
-            if (position == -1) {
-                Point p = singleList.get(singleList.size() - 1);
-                p1.setX(p.getX());
-                p1.setY(p.getY());
-            } else {
-                Point p = singleList.get(position);
-                p1.setX(p.getX());
-                p1.setY(p.getY());
-            }
-            duan1.setLock(true);
-        } else if ((duan1.isLock() && duan2.isLock())
-                || (!duan1.isLock() && !duan2.isLock() && p1.isLock() && p2.isLock())){
-            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
-                if (duan1.getY() < duan2.getY()) {
-                    duan1.setX(duan1.getX());
-                    duan1.setY((float) (duan1.getY() - l));
-                    duan2.setX(duan2.getX());
-                    duan2.setY((float) (duan2.getY() + l));
-                } else if (duan1.getY() > duan2.getY()) {
-                    duan1.setX(duan1.getX());
-                    duan1.setY((float) (duan1.getY() + l));
-                    duan2.setX(duan2.getX());
-                    duan2.setY((float) (duan2.getY() - l));
-                }
-            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
-                if (duan1.getX() < duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() - l));
-                    duan1.setY(duan1.getY());
-                    duan2.setX((float) (duan2.getX() + l));
-                    duan2.setY(duan2.getY());
-                } else if (duan1.getX() > duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() + l));
-                    duan1.setY(duan1.getY());
-                    duan2.setX((float) (duan2.getX() - l));
-                    duan2.setY(duan2.getY());
-                }
-            } else {
-                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, l);
-                double dx = dxAdy[0];
-                double dy = dxAdy[1];
-                if (duan1.getX() < duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() - dx));
-                    duan1.setY((float) (duan1.getY() - dy));
-                    duan2.setX((float) (duan2.getX() + dx));
-                    duan2.setY((float) (duan2.getY() + dy));
-                } else if (duan1.getX() > duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() + dx));
-                    duan1.setY((float) (duan1.getY() + dy));
-                    duan2.setX((float) (duan2.getX() - dx));
-                    duan2.setY((float) (duan2.getY() - dy));
-                }
-            }
-        } else if (duan1.isLock() && !duan2.isLock() && p2.isLock()) {
-            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
-                if (duan1.getY() < duan2.getY()) {
-                    duan2.setX(duan2.getX());
-                    duan2.setY((float) (duan2.getY() + 2 * l));
-                } else if (duan1.getY() > duan2.getY()) {
-                    duan2.setX(duan2.getX());
-                    duan2.setY((float) (duan2.getY() - 2 * l));
-                }
-            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
-                if (duan1.getX() < duan2.getX()) {
-                    duan2.setX((float) (duan2.getX() + 2 * l));
-                    duan2.setY(duan2.getY());
-                } else if (duan1.getX() > duan2.getX()) {
-                    duan2.setX((float) (duan2.getX() - 2 * l));
-                    duan2.setY(duan2.getY());
-                }
-            } else {
-                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
-                double dx = dxAdy[0];
-                double dy = dxAdy[1];
-                if (duan1.getX() < duan2.getX()) {
-                    duan2.setX((float) (duan2.getX() + dx));
-                    duan2.setY((float) (duan2.getY() + dy));
-                } else if (duan1.getX() > duan2.getX()) {
-                    duan2.setX((float) (duan2.getX() - dx));
-                    duan2.setY((float) (duan2.getY() - dy));
-                }
-                duan2.setLock(true);
-            }
-        } else if (duan2.isLock() && !duan1.isLock() && p1.isLock())
-            if (Float.isInfinite(k) || Float.isNaN(k) || duan1.getX() == duan2.getX()) {//垂直
-                if (duan1.getY() < duan2.getY()) {
-                    duan1.setX(duan1.getX());
-                    duan1.setY((float) (duan1.getY() - 2 * l));
-                } else if (duan1.getY() > duan2.getY()) {
-                    duan1.setX(duan1.getX());
-                    duan1.setY((float) (duan1.getY() + 2 * l));
-                }
-            } else if (duan1.getY() - duan2.getY() > -0.01 && duan1.getY() - duan2.getY() < 0.01) {//水平
-                if (duan1.getX() < duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() - 2 * l));
-                    duan1.setY(duan1.getY());
-                } else if (duan1.getX() > duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() + 2 * l));
-                    duan1.setY(duan1.getY());
-                }
-            } else {
-                double[] dxAdy = DrawUtils.getDxAndDy(duan1, duan2, 2 * l);
-                double dx = dxAdy[0];
-                double dy = dxAdy[1];
-                if (duan1.getX() < duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() - dx));
-                    duan1.setY((float) (duan1.getY() - dy));
-                } else if (duan1.getX() > duan2.getX()) {
-                    duan1.setX((float) (duan1.getX() + dx));
-                    duan1.setY((float) (duan1.getY() + dy));
-                }
-                duan1.setLock(true);
-            }*/
+        if (downPosition == singleList.size() - 2) {
+            position = -1;
+        } else {
+            position = downPosition + 1;
+        }
+        moveLine(duan2, p2, moveP2, position, 0, 0);
+        duan2.setX(moveP2.getX());
+        duan2.setY(moveP2.getY());
+        if (position == -1) {
+            Point p = singleList.get(0);
+            p2.setX(p.getX());
+            p2.setY(p.getY());
+        } else {
+            Point p = singleList.get(position + 1);
+            p2.setX(p.getX());
+            p2.setY(p.getY());
+        }
+        duan1.setLock(true);
+        duan2.setLock(true);
 
         //更新绘制
+        invalidate();
+    }
+
+
+    public class TouchEventCountThread implements Runnable {
+        public int touchCount = 0;
+        public PoPoListModel poListModel = new PoPoListModel();
+
+        @Override
+        public void run() {
+            Message msg = new Message(); // TODO: 2017/8/23  
+            if (touchCount != 0) {
+                msg.arg1 = touchCount;
+                msg.obj = poListModel;
+                mTouchEventHandler.sendMessage(msg);
+                touchCount = 0;
+            }
+        }
+    }
+
+    public interface OnDoubleClickListener {
+        void onDoubleClick(View v);
+    }
+
+    private OnDoubleClickListener mOnDoubleClickListener;
+
+    public void setOnDoubleClickListener(OnDoubleClickListener l) {
+        mOnDoubleClickListener = l;
+    }
+
+    public boolean performDoubleClick() {
+        boolean result = false;
+        if (mOnDoubleClickListener != null) {
+            mOnDoubleClickListener.onDoubleClick(this);
+            result = true;
+        }
+        return result;
+    }
+
+
+    private PoPoListModel poListModel;
+    public class TouchEventHandler extends Handler {
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (2 == msg.arg1) {
+                // TODO: 2017/8/23
+                poListModel = (PoPoListModel) msg.obj;
+                performDoubleClick();
+            }
+        }
+    }
+
+    boolean isExit;
+    private void exitByDoubleClick(PoPoListModel poListModel) {
+        Timer tExit=null;
+        if(!isExit){
+            isExit=true;
+            tExit=new Timer();
+            tExit.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    isExit=false;//取消退出
+                }
+            },1000);// 如果2秒钟内没有按下返回键，则启动定时器取消掉刚才执行的任务
+        }else{
+            this.poListModel = poListModel;
+            performDoubleClick();
+//            Toast.makeText(getContext(),"退出程序--->Timer",Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private boolean isAddText; //是否折线
+    private String editText;
+    private boolean isAddRouter; //添加路由器
+
+    /**
+     * 是否添加文字
+     */
+    public void setAddText(boolean isAddText, String editText) {
+        this.isAddText = isAddText;
+        this.editText = editText;
+        poListModel.setText(editText);
+        invalidate();
+    }
+
+    /**
+     * 添加文字
+     */
+    public void addText(PoPoListModel poListModel) {
+        poListModel.setText(editText);
+        gravityPoint = DrawUtils.getCenterOfGravityPoint(poListModel.getList());
+        isAddText = true;
+    }
+
+    /**
+     * 添加路由器
+     */
+//    public void addRouter(boolean isAddRouter) {
+//        this.isAddRouter = isAddRouter;
+//        invalidate();
+//    }
+
+    private boolean pointCheck(ImageGroup imageGroup, float x, float y) {
+        float[] points = getBitmapPoints(imageGroup);
+        float x1 = points[0];
+        float y1 = points[1];
+        float x2 = points[2];
+        float y2 = points[3];
+        float x3 = points[4];
+        float y3 = points[5];
+        float x4 = points[6];
+        float y4 = points[7];
+
+        float edge = (float) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+        if ((2 + Math.sqrt(2)) * edge >= Math.sqrt(Math.pow(x - x1, 2) + Math.pow(y - y1, 2))
+                + Math.sqrt(Math.pow(x - x2, 2) + Math.pow(y - y2, 2))
+                + Math.sqrt(Math.pow(x - x3, 2) + Math.pow(y - y3, 2))
+                + Math.sqrt(Math.pow(x - x4, 2) + Math.pow(y - y4, 2))) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean circleCheck(ImageGroup imageGroup, float x, float y) {
+        float[] points = getBitmapPoints(imageGroup);
+        float x2 = points[2];
+        float y2 = points[3];
+
+        int checkDis = (int) Math.sqrt(Math.pow(x - x2, 2) + Math.pow(y - y2, 2));
+
+        if (checkDis < 40) {
+            return true;
+        }
+        return false;
+    }
+
+    private int deleteCheck(float x, float y) {
+        for (int i = 0; i < mDecalImageGroupList.size(); i++) {
+            if (circleCheck(mDecalImageGroupList.get(i), x, y)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int decalCheck(float x, float y) {
+        for (int i = 0; i < mDecalImageGroupList.size(); i++) {
+            if (pointCheck(mDecalImageGroupList.get(i), x, y)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public void addDecal(Bitmap bitmap) {
+        ImageGroup imageGroupTemp = new ImageGroup();
+        imageGroupTemp.bitmap = bitmap;
+        if (imageGroupTemp.matrix == null) {
+            imageGroupTemp.matrix = new Matrix();
+        }
+        float transX = (getWidth() - imageGroupTemp.bitmap.getWidth()) / 2;
+        float transY = (getHeight() - imageGroupTemp.bitmap.getHeight()) / 2;
+        imageGroupTemp.matrix.postTranslate(transX, transY);
+        imageGroupTemp.matrix.postScale(0.5f, 0.5f, getWidth() / 2, getHeight() / 2);
+//        mDecalImageGroupList.add(imageGroupTemp);
+        imageGroupModel.addImageGroup(imageGroupTemp);
+
         invalidate();
     }
 

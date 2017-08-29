@@ -7,37 +7,33 @@
     android:orientation="vertical"
     tools:context="com.example.hasee.drawtest.weidget.Two.success.FourActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/addDrawBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="添加图形"/>
-
-        <Button
-            android:id="@+id/saveDrawBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="保存图形"/>
-
-    </LinearLayout>
 
     <RelativeLayout
+        android:id="@+id/relativeLayout"
         android:layout_width="match_parent"
-        android:layout_height="40dp">
+        android:layout_height="50dp">
 
-        <Button
-            android:id="@+id/bnt_draw_new"
-            android:visibility="gone"
+        <LinearLayout
+            android:id="@+id/linearLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="完成"/>
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/addDrawBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="添加图形"/>
+
+            <Button
+                android:id="@+id/saveDrawBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="保存图形"/>
+
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/ll_line_set"
@@ -76,21 +72,105 @@
     </RelativeLayout>
 
 
-    <!--<com.example.hasee.drawtest.weidget.Two.success.MyDrawView-->
-    <!--android:id="@+id/myDraw_view"-->
-    <!--android:layout_width="match_parent"-->
-    <!--android:layout_height="match_parent"/>-->
-
     <com.example.hasee.drawtest.weidget.Two.success.MyDrawView
         android:id="@+id/myDraw_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="wrap_content"
+        android:layout_weight="1"/>
 
-    <com.example.hasee.drawtest.weidget.Two.success.MagicPlanEditorView
-        android:visibility="gone"
-        android:id="@+id/editor_view"
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="60dp"
+        android:orientation="vertical">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:orientation="horizontal">
 
+            <ImageView
+                android:id="@+id/routerBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:src="@mipmap/router"
+                android:text="路由器"/>
+
+            <ImageView
+                android:id="@+id/amplifierBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:src="@mipmap/mplifier"
+                android:text="放大器"/>
+
+            <ImageView
+                android:id="@+id/testPointBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:src="@mipmap/yuanquan"
+                android:text="测试点"/>
+
+            <ImageView
+                android:id="@+id/homeplugBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:src="@mipmap/homeplug"
+                android:text="电力猫"/>
+
+            <ImageView
+                android:id="@+id/wifiBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:src="@mipmap/wifi"
+                android:text="无线AP"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="路由器"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="放大器"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="测试点"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="电力猫"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="无线AP"/>
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

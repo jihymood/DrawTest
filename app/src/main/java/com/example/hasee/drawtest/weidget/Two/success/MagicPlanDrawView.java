@@ -1,12 +1,15 @@
 package com.example.hasee.drawtest.weidget.Two.success;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.DashPathEffect;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathEffect;
+import android.graphics.Rect;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -33,6 +36,7 @@ public class MagicPlanDrawView extends View {
     private List<Point> points = new ArrayList<>();
     private List<Point> movePoints = new ArrayList<>();
     private List<PoPoListModel> showPolygons = new ArrayList<>();
+    private List<BaseView.ImageGroup> imageGroups = new ArrayList<>();
     private Paint mPaint = new Paint();
     private Paint mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint mBZPaint = new Paint();
@@ -61,6 +65,28 @@ public class MagicPlanDrawView extends View {
     private float mScale = 1.0f;
     private float curScale = 1.0f;
 
+    /**
+     * 是否华正方形
+     */
+    private boolean isDrawSquare;
+    /**
+     * 是否折线
+     */
+    private boolean isDrawPolygonalLine;
+    /**
+     * 是否是第一次画正方形
+     */
+    private boolean isFirstDrawSquare;
+    /**
+     * 不规则图形的重心
+     */
+    private Point gravityPoint;
+
+    /**
+     * 画笔
+     */
+    private Paint writingPaint;
+
     public float getmScale() {
         return mScale;
     }
@@ -80,7 +106,6 @@ public class MagicPlanDrawView extends View {
 
     public List<PoPoListModel> getShowPolygons() {
         return showPolygons;
-
     }
 
     public void setShowPolygons(List<PoPoListModel> showPolygons) {
@@ -88,6 +113,14 @@ public class MagicPlanDrawView extends View {
         invalidate();
     }
 
+    public List<BaseView.ImageGroup> getImageGroups() {
+        return imageGroups;
+    }
+
+    public void setImageGroups(List<BaseView.ImageGroup> imageGroups) {
+        this.imageGroups = imageGroups;
+        invalidate();
+    }
 
     public MagicPlanDrawView(Context context) {
         super(context);
@@ -135,6 +168,13 @@ public class MagicPlanDrawView extends View {
         mBZPaint.setStrokeWidth(5);
         mBZPaint.setColor(Color.RED);
         mBZPaint.setStyle(Paint.Style.STROKE);
+
+        //添加文字画笔
+        writingPaint = new Paint();
+        writingPaint.setColor(Color.BLACK);
+        writingPaint.setStrokeWidth(15);
+        writingPaint.setStyle(Paint.Style.FILL);
+        writingPaint.setAntiAlias(true);
     }
 
 
@@ -146,6 +186,126 @@ public class MagicPlanDrawView extends View {
     }
 
     @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        mCanvas = canvas;
+        mCanvas.save();
+        mCanvas.scale(curScale, curScale, midX, midY);
+
+        if (showPolygons.size() > 0 && showPolygons != null) {
+            for (PoPoListModel polygon : showPolygons) {
+                List<Point> getPoints = polygon.getList();
+                if (getPoints.size() >= 2 && getPoints != null) {
+                    path.reset();
+                    path.moveTo(getPoints.get(0).getX(), getPoints.get(0).getY());
+                    for (int i = 1; i < getPoints.size(); i++) {
+                        path.lineTo(getPoints.get(i).getX(), getPoints.get(i).getY());
+                    }
+                    path.close();
+                    mCanvas.drawPath(path, pathPaint);
+
+                    if (polygon.getText() != null) {
+                        gravityPoint = DrawUtils.getCenterOfGravityPoint(polygon.getList());
+                        canvas.drawText(polygon.getText(), this.gravityPoint.getX(), this.gravityPoint.getY(), writingPaint);
+                    }
+
+                }
+            }
+        }
+
+        /**
+         * 绘制图标，感觉在这个view中画多此一举
+         */
+//        if (imageGroups.size() > 0 && imageGroups != null) {
+//            for (BaseView.ImageGroup imageGroup : imageGroups) {
+//                imageGroup.bitmap = Utils.getBitmap(imageGroup.getPic());
+//                Matrix matrix = new Matrix();
+//                matrix.setValues(imageGroup.getValues());
+//                imageGroup.matrix = matrix;
+//
+//                float[] points = getBitmapPoints(imageGroup.bitmap, imageGroup.matrix);
+//                float x1 = points[0];
+//                float y1 = points[1];
+//                float x2 = points[2];
+//                float y2 = points[3];
+//                float x3 = points[4];
+//                float y3 = points[5];
+//                float x4 = points[6];
+//                float y4 = points[7];
+//
+//                canvas.drawLine(x1, y1, x2, y2, pathPaint);
+//                canvas.drawLine(x2, y2, x4, y4, pathPaint);
+//                canvas.drawLine(x4, y4, x3, y3, pathPaint);
+//                canvas.drawLine(x3, y3, x1, y1, pathPaint);
+//                canvas.drawCircle(x2, y2, 20, pathPaint);
+//                canvas.drawBitmap(imageGroup.bitmap, x2 - imageGroup.bitmap.getWidth() / 2, y2 - imageGroup.bitmap.getHeight() / 2,
+//                        pathPaint); //右上角叉叉
+//                canvas.drawBitmap(imageGroup.bitmap, imageGroup.matrix, pathPaint); //贴纸
+//            }
+//        }
+
+
+
+        //画折线
+        if (isDrawPolygonalLine) {
+            if (points.size() >= 2) {
+                for (int i = 0; i < points.size() - 1; i++) {
+                    Point p = points.get(i);
+                    Point p1 = points.get(i + 1);
+                    mCanvas.drawLine(p.getX(), p.getY(), p1.getX(), p1.getY(), mPaint);
+                    drawBz(p, p1, canvas);
+                }
+                //虚线
+                pathDash.reset();
+                pathDash.moveTo(points.get(points.size() - 1).getX(), points.get(points.size() - 1).getY());
+                pathDash.lineTo(points.get(0).getX(), points.get(0).getY());
+                mCanvas.drawPath(pathDash, mPaint);
+            }
+            if (isDrawCir && points.size() > 0) {
+                circlePaint.setStrokeWidth(10 / curScale);
+                mCanvas.drawCircle(cx, cy, 80 / curScale, circlePaint);
+            }
+        }
+        // TODO: 2017/8/23
+        //画正方形
+        if (isDrawSquare ) {
+            if (isFirstDrawSquare) {
+                canvas.drawRect(new Rect(300, 300, 600, 600), pathPaint);
+                points.clear();
+                points.add(new Point(300, 300));
+                points.add(new Point(600, 300));
+                points.add(new Point(600, 600));
+                points.add(new Point(300, 600));
+                lastSecond = new Point(600, 600);
+                isFirstDrawSquare = false;
+            }else{
+                path.reset();
+                if (points != null && points.size() >= 2) {
+                    path.moveTo(points.get(0).getX(), points.get(0).getY());
+                    for (int i = 1; i < points.size(); i++) {
+                        path.lineTo(points.get(i).getX(), points.get(i).getY());
+                    }
+                    path.close();
+                    canvas.drawPath(path, pathPaint);
+                }
+            }
+        }
+    }
+
+    protected float[] getBitmapPoints(Bitmap bitmap, Matrix matrix) {
+        float[] dst = new float[8];
+        float[] src = new float[]{
+                0, 0,
+                bitmap.getWidth(), 0,
+                0, bitmap.getHeight(),
+                bitmap.getWidth(), bitmap.getHeight()
+        };
+
+        matrix.mapPoints(dst, src);
+        return dst;
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent e) {
         switch (e.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
@@ -153,7 +313,8 @@ public class MagicPlanDrawView extends View {
                 startX = (e.getX() - midX) / curScale + midX;
                 startY = (e.getY() - midY) / curScale + midY;
                 if (points.size() > 0 && points != null) {
-                    if (Utils.lineSpace((int) startX, (int) startY, (int) points.get(points.size() - 1).getX(), (int) (points.get(points.size() - 1).getY())) < 80 / curScale) {
+                    if (Utils.lineSpace((int) startX, (int) startY, (int) points.get(points.size() - 1).getX(), (int)
+                            (points.get(points.size() - 1).getY())) < 80 / curScale) {
                         downPosition = 1;
                     } else {
                         downPosition = -1;
@@ -225,12 +386,14 @@ public class MagicPlanDrawView extends View {
                         cy = startY;
                         points.add(new Point(x, y));
                     } else {
-                        double l = Utils.lineSpace(startX, startY, points.get(points.size() - 1).getX(),(points.get(points.size() - 1).getY()));
+                        double l = Utils.lineSpace(startX, startY, points.get(points.size() - 1).getX(), (points.get
+                                (points.size() - 1).getY()));
                         if (l > 80) {
                             if (points.size() > 2) {
                                 flags.clear();
                                 for (int i = 0; i < points.size() - 2; i++) {
-                                    flag = Utils.segIntersect(points.get(points.size() - 1), new Point(startX, startY), points.get(i), points.get(i + 1));
+                                    flag = Utils.segIntersect(points.get(points.size() - 1), new Point(startX,
+                                            startY), points.get(i), points.get(i + 1));
                                     flags.add(flag);
                                 }
                                 if (!flags.contains(1)) {
@@ -254,6 +417,7 @@ public class MagicPlanDrawView extends View {
         }
 
         invalidate();
+//        isDrawSquare = false;
         return true;
     }
 
@@ -276,45 +440,6 @@ public class MagicPlanDrawView extends View {
         }
     }
 
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        mCanvas = canvas;
-        mCanvas.save();
-        mCanvas.scale(curScale, curScale, midX, midY);
-        if (showPolygons.size() > 0 && showPolygons != null) {
-            for (PoPoListModel polygon : showPolygons) {
-                List<Point> getPoints = polygon.getList();
-                if (getPoints.size() >= 2 && getPoints != null) {
-                    path.reset();
-                    path.moveTo(getPoints.get(0).getX(), getPoints.get(0).getY());
-                    for (int i = 1; i < getPoints.size(); i++) {
-                        path.lineTo(getPoints.get(i).getX(), getPoints.get(i).getY());
-                    }
-                    path.close();
-                    mCanvas.drawPath(path, pathPaint);
-                }
-            }
-        }
-
-        if (points.size() >= 2) {
-            for (int i = 0; i < points.size() - 1; i++) {
-                Point p = points.get(i);
-                Point p1 = points.get(i + 1);
-                mCanvas.drawLine(p.getX(), p.getY(), p1.getX(), p1.getY(), mPaint);
-                drawBz(p, p1, canvas);
-            }
-            //虚线
-            pathDash.reset();
-            pathDash.moveTo(points.get(points.size() - 1).getX(), points.get(points.size() - 1).getY());
-            pathDash.lineTo(points.get(0).getX(), points.get(0).getY());
-            mCanvas.drawPath(pathDash, mPaint);
-        }
-        if (isDrawCir && points.size() > 0) {
-            circlePaint.setStrokeWidth(10 / curScale);
-            mCanvas.drawCircle(cx, cy, 80 / curScale, circlePaint);
-        }
-    }
 
     private void drawBz(Point p, Point p1, Canvas canvas) {
         double degree = Utils.getDegreeByK(p, p1);
@@ -478,8 +603,10 @@ public class MagicPlanDrawView extends View {
         }
         if (!flags.contains(1)) {
             //起点,最后一个点和倒数第二个点在一条直线上,或者第一个点到最后一条线的距离小于10则去掉最后一个点,完成绘制
-            if (Utils.segIntersect(points.get(0), points.get(points.size() - 1), points.get(points.size() - 1), lastSecond) == 0
-                    || Utils.pointToLine((int) points.get(0).getX(), (int) points.get(0).getY(), points.get(points.size() - 1), lastSecond) < 20) {
+            if (Utils.segIntersect(points.get(0), points.get(points.size() - 1), points.get(points.size() - 1),
+                    lastSecond) == 0
+                    || Utils.pointToLine((int) points.get(0).getX(), (int) points.get(0).getY(), points.get(points
+                    .size() - 1), lastSecond) < 20) {
                 pathDash.reset();
                 points.remove(points.get(points.size() - 1));
                 movePoints.addAll(points);
@@ -498,6 +625,9 @@ public class MagicPlanDrawView extends View {
         }
     }
 
+    /**
+     * 复原功能
+     */
     public void recover() {
         if (points.size() > 0) {
             points.remove(points.size() - 1);
@@ -514,4 +644,28 @@ public class MagicPlanDrawView extends View {
         }
         postInvalidate();
     }
+
+
+    /**
+     * 添加正方形
+     */
+    public void addSquare(boolean isDrawSquare,boolean isFirstDrawSquare,boolean isDrawPolygonalLine) {
+        this.isDrawSquare = isDrawSquare;
+        this.isFirstDrawSquare = isFirstDrawSquare;
+        this.isDrawPolygonalLine = isDrawPolygonalLine;
+        invalidate();
+    }
+
+    /**
+     * 添加不规则图形
+     */
+    public void addpolygonalLine(boolean isDrawPolygonalLine,boolean isDrawSquare) {
+        this.isDrawPolygonalLine = isDrawPolygonalLine;
+        this.isDrawSquare = isDrawSquare;
+        invalidate();
+    }
+
+
+
+
 }

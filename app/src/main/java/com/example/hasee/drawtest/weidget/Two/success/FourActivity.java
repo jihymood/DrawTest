@@ -4,6 +4,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -17,10 +19,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.hasee.drawtest.Main2Activity;
 import com.example.hasee.drawtest.R;
+import com.example.hasee.drawtest.model.ImageGroupModel;
 import com.example.hasee.drawtest.model.PoPoListModel;
 import com.example.hasee.drawtest.model.Point;
 import com.example.hasee.drawtest.model.ViewListModel;
@@ -36,10 +40,12 @@ import java.util.List;
 
 public class FourActivity extends AppCompatActivity implements View.OnClickListener, Handler.Callback {
 
-    private Button bntDrawNew, bntOkLong;
+    private Button bntOkLong;
+    private ImageView amplifierBtn, homeplugBtn, routerBtn, testPointBtn, wifiBtn;
     private ImageView ivClear;
     private EditText etLineLong;
-    private LinearLayout llLineSet;
+    private LinearLayout llLineSet, linearLayout;
+    private RelativeLayout relativeLayout;
     private List<List<Point>> twofoldList;
     private MyDrawView drawView;
     private Button addDrawBtn, saveDrawBtn;
@@ -49,37 +55,64 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
     private static final int MSG_SAVE_SUCCESS = 1;
     private static final int MSG_SAVE_FAILED = 2;
     private ProgressDialog mSaveProgressDlg;
+    private final static int REQUESTCODE = 1; // 返回的结果码
+
+    private CropView mCropView;
+    private Bitmap routerIcon, amplifierIcon, testPointIcon, homeplugIcon, wifiIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_four);
 
+        init();
+        getFromIntent();
+        setListener();
+
+    }
+
+    public void init() {
         addDrawBtn = (Button) findViewById(R.id.addDrawBtn);
         saveDrawBtn = (Button) findViewById(R.id.saveDrawBtn);
-        bntDrawNew = (Button) findViewById(R.id.bnt_draw_new);
         bntOkLong = (Button) findViewById(R.id.bnt_ok_long);
         ivClear = (ImageView) findViewById(R.id.iv_clear);
         etLineLong = (EditText) findViewById(R.id.et_line_long);
         llLineSet = (LinearLayout) findViewById(R.id.ll_line_set);
+        linearLayout = (LinearLayout) findViewById(R.id.linearLayout);
         bntOkLong = (Button) findViewById(R.id.bnt_ok_long);
         drawView = (MyDrawView) findViewById(R.id.myDraw_view);
+        amplifierBtn = (ImageView) findViewById(R.id.amplifierBtn);
+        routerBtn = (ImageView) findViewById(R.id.routerBtn);
+        homeplugBtn = (ImageView) findViewById(R.id.homeplugBtn);
+        testPointBtn = (ImageView) findViewById(R.id.testPointBtn);
+        wifiBtn = (ImageView) findViewById(R.id.wifiBtn);
+        mCropView = (CropView) findViewById(R.id.main_crop_view);
 
         addDrawBtn.setOnClickListener(this);
         saveDrawBtn.setOnClickListener(this);
-        bntDrawNew.setOnClickListener(this);
         bntOkLong.setOnClickListener(this);
         ivClear.setOnClickListener(this);
+        amplifierBtn.setOnClickListener(this);
+        routerBtn.setOnClickListener(this);
+        homeplugBtn.setOnClickListener(this);
+        testPointBtn.setOnClickListener(this);
+        wifiBtn.setOnClickListener(this);
 
         mHandler = new Handler(this);
         viewModelList = new ArrayList<>();
         twofoldList = new ArrayList<>();
+
+    }
+
+    public void getFromIntent() {
         polygons = (List<PoPoListModel>) getIntent().getSerializableExtra("polygons");
         drawView.setAllModelList(polygons);
         float scale = getIntent().getFloatExtra("scale", 1f);
         drawView.setmScale(scale);
+    }
 
 
+    public void setListener() {
         drawView.setListener(new MyDrawView.IShowChangeLongViewListener() {
             @Override
             public void showView(String lineLong) {
@@ -88,16 +121,25 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
                 animation.setDuration(500);
                 llLineSet.setAnimation(animation);
                 llLineSet.setVisibility(View.VISIBLE);
-                bntDrawNew.setVisibility(View.GONE);
+                linearLayout.setVisibility(View.GONE);
             }
 
             @Override
             public void cancelView() {
                 llLineSet.setVisibility(View.GONE);
-//                bntDrawNew.setVisibility(View.VISIBLE);
+                linearLayout.setVisibility(View.VISIBLE);
             }
         });
 
+
+        drawView.setOnDoubleClickListener(new MyDrawView.OnDoubleClickListener() {
+            @Override
+            public void onDoubleClick(View v) {
+                Toast.makeText(FourActivity.this, "double click", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(FourActivity.this, RoomTypeActivity.class);
+                startActivityForResult(intent, REQUESTCODE);
+            }
+        });
     }
 
     private void initSaveProgressDlg() {
@@ -107,47 +149,71 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+    /**
+     * 得到矩阵的9个值
+     * @param imageGroup
+     * @return
+     */
+    protected float[] getValuess(BaseView.ImageGroup imageGroup) {
+        return getValuess(imageGroup.bitmap, imageGroup.matrix);
+    }
+
+    protected float[] getValuess(Bitmap bitmap, Matrix matrix) {
+        float[] dst = new float[9];
+        float[] src = new float[]{
+                0, 0,
+                bitmap.getWidth(), 0,
+                0, bitmap.getHeight(),
+                bitmap.getWidth(), bitmap.getHeight()
+        };
+
+        matrix.getValues(dst);
+        return dst;
+    }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.addDrawBtn:  //添加新图形
                 Intent intent = new Intent(this, ThreeActivity.class);
                 intent.putExtra("polygons", (Serializable) drawView.getAllModelList());
-//                intent.putExtra("polygons", (Serializable) drawView.getTwofoldList());
                 intent.putExtra("scale", drawView.getmScale());
+
+//                List<BaseView.ImageGroup> imageGroups = drawView.getmDecalImageGroupList();
+
+//                ImageGroupModel imageGroupModel = ImageGroupModel.getInstance();
+//                List<BaseView.ImageGroup> imageGroupList = imageGroupModel.getImageGroupList();
+//                for (BaseView.ImageGroup imageGroup : imageGroupList) {
+//                    try {
+//                        float[] valuess = getValuess(imageGroup);
+//                        imageGroup.setValues(valuess);
+//                        imageGroup.matrix = null;
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                    byte[] bytes = Utils.getBytes(imageGroup.bitmap);
+//                    imageGroup.setPic(bytes);
+//                    imageGroup.bitmap = null;
+//
+//                }
+//                intent.putExtra("decalImages", (Serializable) imageGroupList);
+
                 startActivity(intent);
                 this.finish();
                 break;
-            case R.id.saveDrawBtn: //所有图形对象的集合
+            case R.id.saveDrawBtn: //保存图形（所有图形对象的集合）
                 List<PoPoListModel> allModelList = drawView.getAllModelList();
                 for (PoPoListModel poListModel : allModelList) {
                     for (Point point : poListModel.getList()) {
                         Log.e("FourActivity", "点坐标：" + point.getX() + "/" + point.getY());
                     }
                 }
-//                PointListModel pointListModel = PointListModel.getInstance();
-//                pointListModel.setListModels(allModelList);
-
-//                ViewModel viewModel=ViewModel.getInstance();
-//                LinearLayout linearLayout = new LinearLayout(this);
-//                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-//                        ViewGroup.LayoutParams.WRAP_CONTENT);
-//                setContentView(linearLayout);
-//                linearLayout.setLayoutParams(params);
-//                linearLayout.addView(drawView);
-//                viewModel.addViewToList(linearLayout);
-
-
-//                PointListModel pointListModel = new PointListModel();
-//                pointListModel.setListModels(allModelList);
-
 
                 List<ViewModel> list = new ArrayList<>();
                 ViewModel viewModel = new ViewModel();
                 viewModel.setPointList(allModelList);
                 byte[] bytes = viewModel.getBytes(drawView.initBitmap());
                 viewModel.setPic(bytes);
-//                viewModel.setBitmap(drawView.initBitmap());
                 list.add(viewModel);
 
                 if (mSaveProgressDlg == null) {
@@ -158,7 +224,6 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
                     @Override
                     public void run() {
                         Bitmap bm = drawView.initBitmap();
-//                        Bitmap bm = drawView.buildBitmap();
                         String savedFile = saveImage(bm, 100);
                         if (savedFile != null) {
                             scanFile(FourActivity.this, savedFile);
@@ -175,7 +240,7 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
                  */
                 Intent intent1 = new Intent(this, Main2Activity.class);
                 intent1.putExtra("list", (Serializable) list);
-                setResult(RESULT_OK,intent1);
+                setResult(RESULT_OK, intent1);
 
                 /**
                  * 方法二
@@ -198,12 +263,34 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
                     animation.setDuration(500);
                     llLineSet.setAnimation(animation);
                     llLineSet.setVisibility(View.GONE);
-//                    bntDrawNew.setVisibility(View.VISIBLE);
+                    linearLayout.setVisibility(View.VISIBLE);
                 }
                 break;
             case R.id.clear:
                 etLineLong.setText("");
                 break;
+            case R.id.routerBtn:  //路由器
+                routerIcon = BitmapFactory.decodeResource(getResources(), R.drawable.router);
+//                drawView.addRouter(true);
+                drawView.addDecal(routerIcon);
+                break;
+            case R.id.amplifierBtn: //放大器
+                amplifierIcon = BitmapFactory.decodeResource(getResources(), R.drawable.mplifier);
+                drawView.addDecal(amplifierIcon);
+                break;
+            case R.id.testPointBtn: //测试点
+                testPointIcon = BitmapFactory.decodeResource(getResources(), R.drawable.yuanquan);
+                drawView.addDecal(testPointIcon);
+                break;
+            case R.id.homeplugBtn: //电力猫
+                homeplugIcon = BitmapFactory.decodeResource(getResources(), R.drawable.homeplug);
+                drawView.addDecal(homeplugIcon);
+                break;
+            case R.id.wifiBtn: //无线AP
+                wifiIcon = BitmapFactory.decodeResource(getResources(), R.drawable.wifi);
+                drawView.addDecal(wifiIcon);
+                break;
+
             default:
                 break;
         }
@@ -257,6 +344,7 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case MSG_SAVE_SUCCESS:
                 mSaveProgressDlg.dismiss();
+                ImageGroupModel.getInstance().cleanGroupList();//保存后清空图标集合
                 Toast.makeText(this, "画板已保存", Toast.LENGTH_SHORT).show();
                 break;
         }
@@ -269,4 +357,25 @@ public class FourActivity extends AppCompatActivity implements View.OnClickListe
         mHandler.removeMessages(MSG_SAVE_FAILED);
         mHandler.removeMessages(MSG_SAVE_SUCCESS);
     }
+
+    // 为了获取结果
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // RESULT_OK，判断另外一个activity已经结束数据输入功能，Standard activity result:
+        // operation succeeded. 默认值是-1
+        if (resultCode == 2) {
+            if (requestCode == REQUESTCODE) {
+                //设置结果显示框的显示数值
+                String editText = data.getStringExtra("editText");
+                Toast.makeText(this, "editText:" + editText, Toast.LENGTH_SHORT).show();
+
+                //将文字添加上去
+                drawView.setAddText(true, editText);
+
+            }
+        }
+    }
+
+
 }
